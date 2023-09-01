@@ -73,10 +73,28 @@ dft_clin_dat_wide <- dft_clin_dat %>%
     values_from = dat
   )
 
-# TODO:  regimen filtering for index cases.
+# Filter the regimen data down to only {record_id, ca_seq} pairs found in the reference data.
+dft_clin_dat_wide %<>%
+  mutate(
+    reg = purrr::map2(
+      .x = ca_ind,
+      .y = reg,
+      .f = (function(ref_dat, dat_to_filter) {
+        inner_join(
+          select(ref_dat, record_id, ca_seq),
+          dat_to_filter,
+          by = c("record_id", "ca_seq")
+        )
+      })
+    )
+  )
 
-      
-
+dft_clin_dat <- dft_clin_dat_wide %>%
+  pivot_longer(
+    cols = -cohort,
+    names_to = "short_name",
+    values_to = "dat"
+  )
 
 
 ###############

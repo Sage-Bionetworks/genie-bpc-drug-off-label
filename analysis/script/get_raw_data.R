@@ -1,6 +1,19 @@
 # Description: Grabs the raw data from Synapse.
 # Author: Alex Paynter
 
+library(fs); library(purrr); library(here)
+purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
+
+synLogin()
+
+dft_datasets_to_get <- tribble(
+  ~synapse_name, ~save_name,
+  "cancer_level_dataset_index.csv", "ca_ind",
+  "cancer_level_dataset_non_index.csv", "ca_non_ind",
+  "cancer_panel_test_level_dataset.csv", "cpt",
+  "patient_level_dataset.csv", "pt",
+  "regimen_cancer_level_dataset.csv", "reg"   
+)
 
 dft_folders <- tibble::tribble(
   ~cohort, ~synid,
@@ -14,61 +27,57 @@ dft_folders <- tibble::tribble(
   #   CRC2, ESOPHAGO, MELANOMA, NSCLC2, OVARIAN, RENAL
 )
 
-
-# The Synapse folder containing the clinical data files.
-synid_clin_data <- "syn50612196"
-
-library(cli)
-library(synapser)
-library(purrr)
-library(dplyr)
-library(here)
-library(stringr)
-library(magrittr)
-
-synLogin()
-
-# create directories for data and data-raw
-dir.create(here("data"), showWarnings = F)
-dir.create(here("data-raw"), showWarnings = F)
-dir.create(here("data-raw", "genomic"), showWarnings = F)
-
-
-df_clin_children <- synGetChildren(synid_clin_data) %>%
-  as.list %>%
-  purrr::map_dfr(.x = .,
-                 .f = as_tibble)
-
-if (any(stringr::str_detect(df_clin_children$name, ".csv^"))) {
-  warning("Non-CSV files unexpectedly contained in {synid_clin_data}.")
+# Sets up raw and cleaned data for one cohort (by name)
+dc_help <- function(cohort_name) {
+  fs::dir_create(here("data", "cohort", cohort_name))
+  fs::dir_create(here("data-raw", cohort_name))
 }
-
-syn_store_in_dataraw <- function(sid) {
-  synGet(entity = sid, downloadLocation = here("data-raw"))
-}
-
-purrr::walk(.x = df_clin_children$id, 
-            .f = syn_store_in_dataraw)
+# Sets up
+purrr::walk(.x = dft_folders$cohort, .f = dc_help)
 
 
-
-
-# Get the genomic data from the "cBioPortal_files" directory.
-df_geno_children <- synGetChildren(synid_cbio_data) %>%
-  as.list %>%
-  purrr::map_dfr(.x = .,
-                 .f = as_tibble)
-
-df_geno_children %<>%
+dft_datasets <- dft_folders %>%
   mutate(
-    is_panel = str_detect(name, "^data_gene_panel_.*\\.txt$"),
-    is_included = name %in% geno_files_included
+    children = purrr::map(
+      .x = synid,
+      .f = (function(id) {
+        dat <- get_syn_children_df(id) %>%
+          # only need limited info for this project
+          select(
+            dat_name = name,
+            dat_synid = id
+          ) %>%
+          filter(dat_name %in% dft_datasets_to_get$synapse_name)
+        
+        dat %<>% left_join(., dft_datasets_to_get,
+                           by = c(dat_name = "synapse_name"))
+        return(dat)
+      })
+    )
   ) %>%
-  filter(is_panel | is_included) 
+  unnest(children)
 
-syn_store_in_dataraw_geno <- function(sid) {
-  synGet(entity = sid, downloadLocation = here("data-raw", "genomic"))
+get_and_save_dataset <- function(
+  synid,
+  subfolder) {
+  
+  synGet(
+    entity = synid, 
+    downloadLocation = here(
+      "data-raw", 
+      subfolder
+      )
+    )
 }
 
-purrr::walk(.x = df_geno_children$id, 
-            .f = syn_store_in_dataraw_geno)
+purrr::pwalk(
+  .l = with(
+    dft_datasets, 
+    list(
+      synid = dat_synid, 
+      subfolder = cohort
+    )
+  ),
+  .f = get_and_save_dataset
+)
+

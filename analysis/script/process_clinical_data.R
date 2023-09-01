@@ -73,6 +73,22 @@ dft_clin_dat_wide <- dft_clin_dat %>%
     values_from = dat
   )
 
+# For those with more than one index cancer, we will generally look at only the first one.
+
+dft_clin_dat_wide %<>%
+  mutate(
+    ca_ind = purrr::map(
+      .x = ca_ind,
+      .f = (function(d) {
+        d %>%
+          group_by(record_id) %>%
+          arrange(ca_seq) %>%
+          slice(1) %>%
+          ungroup
+      })
+    )
+  )
+
 # Filter the regimen data down to only {record_id, ca_seq} pairs found in the reference data.
 dft_clin_dat_wide %<>%
   mutate(

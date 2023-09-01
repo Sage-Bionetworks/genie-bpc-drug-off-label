@@ -1,0 +1,96 @@
+---
+title: "Off-Label & Off-Guideline Project"
+author: "Alex Paynter"
+date: "`r format(Sys.Date(), '%d %b %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = F,
+  include = T,
+  warning = F,
+  message = F,
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+
+
+
+
+```{r}
+library(fs); library(purrr); library(here)
+purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
+```
+
+## Introduction
+
+This is a working document for analyses related to the Off-label & Off-guideline manuscript chaired by Jeremy Warner.
+
+Some important filtering of the raw BPC data we will apply:
+
+- Only regimens associated with the first index cancer for each person will be analyzed.  
+  - This also effectively handles a convention in the BPC data, which is to have two regimen lines if a regimen could potentially be associated with more than one index cancer.
+  
+For the moment we have intentionally included investigational drug regimens - this may make sense to filter later.
+  
+
+## Content
+
+### R1.1 Index/non-index overlap
+
+
+
+
+
+```{r}
+dft_all_reg <- load_all_data_of_type("reg")
+
+# select each reg dataset to have only the columns we need for the time being:
+dft_all_reg %<>%
+  mutate(
+    reg = purrr::map(
+      .x = reg,
+      .f = (function(d) {
+        select(
+          d, 
+          record_id, ca_seq, regimen_number,
+          regimen_drugs)
+      })
+    )
+  ) %>%
+  unnest(reg)
+
+dft_reg_repeat <- dft_all_reg %>%
+  group_by(cohort, record_id, ca_seq) %>%
+  mutate(
+    is_repeat = lag(regimen_drugs) == regimen_drugs,
+    is_repeat = if_else(is.na(is_repeat), F, is_repeat),
+    # A repeat pair is both the uses of the drug.
+    repeat_pair = is_repeat | lead(is_repeat)
+  ) %>%
+    ungroup
+
+# Most common repeat regimens by cohort:
+dft_reg_repeat %>%
+  filter(is_repeat) %>%
+  count(cohort, regimen_drugs) %>%
+  arrange(cohort, desc(n)) %>%
+  group_by(cohort) %>% 
+  slice(1:5) %>%
+  ungroup(.) %>%
+  print(n = 500)
+
+# Todo:  Percentage of participants with >1 repeat regimen.
+# Percentage of regimens which are repeats.
+# Split by cohort as always.
+
+
+# Some ways to display this
+
+dft_reg_repeat %>% filter(is_repeat)
+
+dft_all_reg %>% slice(1) %>% pull(reg) %>% glimpse
+```

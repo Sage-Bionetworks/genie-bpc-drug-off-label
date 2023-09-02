@@ -35,7 +35,68 @@ Some important filtering of the raw BPC data we will apply:
   - This also effectively handles a convention in the BPC data, which is to have two regimen lines if a regimen could potentially be associated with more than one index cancer.
   
 For the moment we have intentionally included investigational drug regimens - this may make sense to filter later.
-  
+
+**Definitions:**
+
+- *repeat regimens* - If a participant has a regimen with drugs {A,B,C} and the very next regimen in their record is {A,B,C} again, that second regimen is a repeat regimen.  If they use {A,B,C,D} or {A,B} in their next regimen that doesn't count (but we can look at that if needed).
+
+
+
+```{r}
+# For this first bit we need the raw data:
+dft_raw_data <- load_all_raw_data_of_type('cancer_level_dataset_index')
+
+dft_raw_data <- left_join(
+  dft_raw_data,
+  load_all_raw_data_of_type('cancer_level_dataset_non_index'),
+  by = "cohort"
+)
+
+# Test case if you like:
+# ca_ind_test <- dft_raw_data %>% slice(1) %>% pull(cancer_level_dataset_index) %>% `[[`(1)
+# ca_non_ind_test <- dft_raw_data %>% slice(1) %>% pull(cancer_level_dataset_non_index) %>% `[[`(1)
+# summarize_records_by_index(ca_ind_test, ca_non_ind_test)
+
+dft_raw_data %<>%
+  mutate(
+    sum = purrr::map2(
+      .x = cancer_level_dataset_index,
+      .y = cancer_level_dataset_non_index,
+      .f = (function(x, y) {
+        summarize_records_by_index(
+          dat_ind = x,
+          dat_non_ind = y)
+      })
+    )
+  )
+
+dft_index <- dft_raw_data %>% select(sum) %>% unnest(sum)
+
+# Note that we have some people with more than one row, but it's because they're in multiple cohorts:
+# dft_index %>% count(record_id, sort = T)
+# dft_index %>% filter(record_id %in% c('GENIE-DFCI-085643', 'GENIE-MSK-P-0002880'))
+
+# Should be zero rows:
+# dft_index %>%
+#   filter(has_non_index_cancer & (ca_seq_of_first_non_index == ca_seq_of_first_index))
+
+
+dft_index %>%
+  group_by(cohort) %>%
+  summarize(
+    n = n(),
+    mult_index = sum(multiple_index_cancers, na.rm = T),
+    non_index = sum(has_non_index_cancer, na.rm = T),
+    non_index_before_index = sum(has_non_index_cancer & 
+      (ca_seq_of_first_non_index < ca_seq_of_first_index), na.rm = T),
+  )
+
+
+
+
+```
+
+
 
 ## Content
 
@@ -74,23 +135,51 @@ dft_reg_repeat <- dft_all_reg %>%
     ungroup
 
 # Most common repeat regimens by cohort:
-dft_reg_repeat %>%
+dfp_reg_repeat_top_drugs <- dft_reg_repeat %>%
   filter(is_repeat) %>%
   count(cohort, regimen_drugs) %>%
   arrange(cohort, desc(n)) %>%
   group_by(cohort) %>% 
-  slice(1:5) %>%
-  ungroup(.) %>%
-  print(n = 500)
+  slice(1:8) %>%
+  ungroup(.) 
 
+hux_reg_repeat_top <- dfp_reg_repeat_top_drugs %>% 
+  huxtable(.)
+
+hux_reg_top_list <- split_across(
+  hux_reg_repeat_top, 
+  dfp_reg_repeat_top_drugs$cohort != lag(dfp_reg_repeat_top_drugs$cohort, default = "BLADDER")
+)
+```
+
+## R1.3 Most frequently repeated regimens in each cohort
+
+See front matter for the definition of a repeat regimen.  The following tables show the regimens most frequently repeated in each cohort.  These are raw counts, so it's possible that one person can have more than one repeat.
+
+```{r print_top_reg_lists, include = T, results = 'asis'}
+# print_html(hux_reg_top_list[[1]])
+purrr::walk(
+  .x = hux_reg_top_list, 
+  .f = (function(k) {
+    k %>%
+      theme_article(.) %>%
+      set_position(., value = "left") %>%
+      print_html(.)
+  })
+)
+```
+
+```{r}
 # Todo:  Percentage of participants with >1 repeat regimen.
 # Percentage of regimens which are repeats.
 # Split by cohort as always.
 
 
+
+
 # Some ways to display this
 
-dft_reg_repeat %>% filter(is_repeat)
-
-dft_all_reg %>% slice(1) %>% pull(reg) %>% glimpse
+# dft_reg_repeat %>% filter(is_repeat)
+# 
+# dft_all_reg %>% slice(1) %>% pull(reg) %>% glimpse
 ```

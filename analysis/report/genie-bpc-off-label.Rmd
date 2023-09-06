@@ -32,12 +32,12 @@ This is a working document for analyses related to the Off-label & Off-guideline
 Some important filtering of the raw BPC data we will apply:
 
 - Only regimens associated with the first index cancer for each person will be analyzed.  
-  - This also effectively handles a convention in the BPC data, which is to have two regimen lines if a regimen could potentially be associated with more than one index cancer.
+  - This also effectively handles a convention in the BPC data, which is to have two regimen lines if a regimen could potentially be associated with more than one cancer.
+- For those with a non-index cancer, their index cancer must precede the non-index cancer to be included.  
   
-For the moment we have intentionally included investigational drug regimens - this may make sense to filter later.
-
 **Definitions:**
 
+- *index cancer* - The cancer diagnosis that qualified the participant for curation into a BPC cohort (e.g. to be in the prostate cohort you must have a prostate cancer in the list).
 - *repeat regimens* - If a participant has a regimen with drugs {A,B,C} and the very next regimen in their record is {A,B,C} again, that second regimen is a repeat regimen.  If they use {A,B,C,D} or {A,B} in their next regimen that doesn't count (but we can look at that if needed).
 
 
@@ -79,28 +79,74 @@ dft_index <- dft_raw_data %>% select(sum) %>% unnest(sum)
 # Should be zero rows:
 # dft_index %>%
 #   filter(has_non_index_cancer & (ca_seq_of_first_non_index == ca_seq_of_first_index))
+```
 
 
-dft_index %>%
+```{r}
+dft_filtering_impact <- dft_index %>%
   group_by(cohort) %>%
   summarize(
     n = n(),
-    mult_index = sum(multiple_index_cancers, na.rm = T),
     non_index = sum(has_non_index_cancer, na.rm = T),
     non_index_before_index = sum(has_non_index_cancer & 
       (ca_seq_of_first_non_index < ca_seq_of_first_index), na.rm = T),
-  )
+    our_cohort = n - non_index_before_index,
+    mult_index = sum(multiple_index_cancers, na.rm = T),
+    .groups = 'drop'
+  ) 
 
 
+dfp_filtering_impact <- dft_filtering_impact %>%
+  mutate(
+    across(
+      .cols = c(non_index, non_index_before_index, our_cohort, mult_index),
+      .fns = (function(a) n_pct_str(a, n))
+    )
+  ) %>%
+  rename(
+    `Number with any non-index cancer` = non_index,
+    `Number with a non-index cancer before first index cancer` = non_index_before_index,
+    `Our cohort` = our_cohort,
+    `Number with greater than one index cancer` = mult_index
+  ) # %>%
+# select(-`Our cohort`) # leave open for now.
+    
+  
+  # summarize(
+  #   n = n(),
+  #   `Number with any non-index cancer` = sum(has_non_index_cancer, na.rm = T),
+  #   `Number with a non-index cancer before first index cancer` = sum(has_non_index_cancer & 
+  #     (ca_seq_of_first_non_index < ca_seq_of_first_index), na.rm = T),
+  #   `Number with greater than one index cancer` = sum(multiple_index_cancers, na.rm = T),
+  #   
+  # )
 
-
+dfp_filtering_impact %<>%
+  mutate(n = glue("{n}")) %>%
+  pivot_longer(
+    cols = -cohort,
+  ) %>%
+  pivot_wider(
+    names_from = cohort,
+    values_from = value
+  ) %>%
+  rename(` ` = name) 
 ```
 
 
 
 ## Content
 
-### R1.1 Index/non-index overlap
+### R1.1 Cohort filtering impact
+
+As stated in the introduction, we filter our cohort to only the first index cancer case and also exclude those who have an non-index cancer before their first cancer diagnosis.  The following table assesses the impact of these filters.  Each entry describes the number of **participants** which meet the criterion.
+
+```{r, include = T}
+dfp_filtering_impact %>%
+  huxtable(.) %>%
+  theme_article(.)
+```
+
 
 
 
@@ -152,9 +198,9 @@ hux_reg_top_list <- split_across(
 )
 ```
 
-## R1.3 Most frequently repeated regimens in each cohort
+### R1.3 Most frequently repeated regimens in each cohort
 
-See front matter for the definition of a repeat regimen.  The following tables show the regimens most frequently repeated in each cohort.  These are raw counts, so it's possible that one person can have more than one repeat.
+See front matter for the definition of a repeat regimen.  The following tables show the regimens most frequently repeated in each cohort.  These are raw counts, so it's possible that one person can have more than one repeat.  "Investigational drug" entries are left in for now, but can be easily removed in later analyses.
 
 ```{r print_top_reg_lists, include = T, results = 'asis'}
 # print_html(hux_reg_top_list[[1]])

@@ -63,8 +63,6 @@ dft_clin_dat %<>%
   unnest(loaded_data)
 
 
-# At this point, apply any crosswalking, coding or filtering needed for analysis.
-
 
 dft_clin_dat_wide <- dft_clin_dat %>%
   select(cohort, short_name, dat) %>%
@@ -88,6 +86,18 @@ dft_clin_dat_wide %<>%
       })
     )
   )
+
+
+# Filter out index cancers that are preceded by a non-index case.
+dft_clin_dat_wide %<>%
+  mutate(
+    ca_ind = purrr::map2(
+      .x = ca_ind,
+      .y = ca_non_ind,
+      .f = filter_pre_nonindex
+    )
+  )
+
 
 # Filter the regimen data down to only {record_id, ca_seq} pairs found in the reference data.
 dft_clin_dat_wide %<>%

@@ -148,7 +148,12 @@ dfp_filtering_impact %>%
 ```
 
 
+*Comment:* In the above table I've labeled "Our cohort" as the number of participants less those that have a non-index cancer before the index cancer.  There is another choice, which is to eliminate **all** participants with more than one cancer.  The tradeoff here is:
 
+- This cohort will be easier to handle, as we won't have to stop following participants once their non-index cancer arrives.
+- We will lose more participants.
+
+I've gone with the less stringent filter today so that the remaining content includes more information.
 
 
 
@@ -170,6 +175,43 @@ dft_all_reg %<>%
   ) %>%
   unnest(reg)
 
+dfp_reg_sum <- dft_all_reg %>% 
+  group_by(cohort, regimen_drugs) %>%
+  summarize(
+    n_regimens = n(),
+    n_people = length(unique(record_id)),
+    .groups = "drop"
+  )
+```
+
+
+```{r, write_excel_data, include = F}
+dfp_reg_sum %>%
+  arrange(cohort, regimen_drugs) %>%
+  readr::write_csv(
+    x = .,
+    file = here('output', 'regimen_counts_by_cohort.csv')
+  )
+```
+
+### R1.2 Regimen drugs
+
+See the **attached CSV** (regimen_counts_by_cohort.csv) for the full list of regimens observed in each cohort.
+
+For convenience, the following table supports simple text searching (not case sensitive).  For example, if you type "Carboplatin bladder" you should see all summaries for the drug carboplatin in the bladder cohort.
+
+Each row shows the number of regimens with those drugs we have in the data (`n_regimens`) and the number of people who had at least one regimen with those exact drugs (`n_people`).
+
+```{r print_reg_table, show = T}
+DT::datatable(dfp_reg_sum, options = list(iDisplayLength = 25))
+```
+
+
+
+
+
+```{r}
+# Figure out repeat regimens in the cohort:
 dft_reg_repeat <- dft_all_reg %>%
   group_by(cohort, record_id, ca_seq) %>%
   mutate(
@@ -229,3 +271,5 @@ purrr::walk(
 # 
 # dft_all_reg %>% slice(1) %>% pull(reg) %>% glimpse
 ```
+
+### R1.4 Todo: regimen repeat numbers.

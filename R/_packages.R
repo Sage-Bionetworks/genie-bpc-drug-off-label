@@ -6,6 +6,9 @@ library(synapser)
 library(purrr)
 library(dplyr)
 library(tidyr)
+library(janitor)
+
+
 library(here)
 library(stringr)
 library(magrittr)
@@ -13,3 +16,5 @@ library(fs)
 library(readr)
 library(huxtable)
 library(glue)
+
+library(ggplot2)

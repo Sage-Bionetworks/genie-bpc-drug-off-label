@@ -4,8 +4,6 @@
 library(fs); library(purrr); library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
-fs::dir_create(here("output"))
-
 synLogin()
 
 dft_datasets_to_get <- tribble(

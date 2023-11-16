@@ -6,3 +6,7 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 source(here('analysis', 'script', 'create_folders.R'))
 source(here('analysis', 'script', 'get_raw_data.R'))
+source(here('analysis', 'script', 'process_clinical_data.R'))
+rmarkdown::render(
+  
+)

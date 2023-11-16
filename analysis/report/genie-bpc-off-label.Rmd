@@ -242,7 +242,7 @@ gg_reg_rep_prop <- ggplot(
   geom_col(fill = "#0077bb") + 
   geom_text(aes(label = lab), hjust = 0, nudge_x = .01) + 
   theme_bw() +
-  coord_cartesian(xlim = c(0,.2), expand = c(0,0)) +
+  coord_cartesian(xlim = c(0,.2), expand = 0) +
   scale_y_discrete(limits = rev) + 
   scale_x_continuous(labels = scales::percent_format()) + 
   labs(x = "Proportion of regimens which are repeats") + 

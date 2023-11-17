@@ -182,7 +182,6 @@ hreg_req_col <- c(
   "tt_pfs_i_and_m_g_days"
 )
 
-
 dft_clin_dat_wide %<>%
   mutate(
     # hreg = harmonized regimen data.
@@ -196,7 +195,30 @@ dft_clin_dat_wide %<>%
   )
 
 
-dft_clin_dat_wide
+# Add the versions of the regimen variables that include last known administration.
+dft_clin_dat_wide %<>%
+  mutate(
+    hreg = purrr::map(
+      .x = hreg,
+      .f = \(x) {
+        add_regimen_lastadm_vars(x)
+      }
+    )
+  )
+
+
+# When you do add in a drugs dataset, do it here!
+
+
+
+
+
+readr::write_rds(
+  file = here('data', 'no_ca_seq_filter', 'clin_dat_wide.rds'),
+  x = dft_clin_dat_wide
+)
+
+
 
 
 
@@ -271,34 +293,38 @@ dft_clin_dat_wide
 #     values_to = "dat"
 #   )
 # 
-# 
-# ###############
-# # Output data #
-# ###############
-# 
-# clin_output_helper <- function(dat, name, subfolder) {
-#   readr::write_rds(
-#     x = dat,
-#     file = here('data', 'cohort', subfolder, paste0(name, ".rds"))
-#   )
-# }
-# 
-# # Example for one row:
-# # clin_output_helper(
-# #   dat = (dft_clin_dat %>% slice(1) %>% pull(dat)),
-# #   name = (dft_clin_dat %>% slice(1) %>% pull(short_name)),
-# #   subfolder = (dft_clin_dat %>% slice(1) %>% pull(cohort))
-# # )
-# 
-# # Do all the rows:
-# purrr::pwalk(
-#   .l = with(
-#     dft_clin_dat,
-#     list(
-#       dat = dat,
-#       name = short_name,
-#       subfolder = cohort
-#     )
-#   ),
-#   .f = clin_output_helper
+#
+
+
+
+
+###############
+# Output data #
+###############
+
+clin_output_helper <- function(dat, name, subfolder) {
+  readr::write_rds(
+    x = dat,
+    file = here('data', 'cohort', subfolder, paste0(name, ".rds"))
+  )
+}
+
+# Example for one row:
+# clin_output_helper(
+#   dat = (dft_clin_dat %>% slice(1) %>% pull(dat)),
+#   name = (dft_clin_dat %>% slice(1) %>% pull(short_name)),
+#   subfolder = (dft_clin_dat %>% slice(1) %>% pull(cohort))
+# )
+
+# Do all the rows:
+purrr::pwalk(
+  .l = with(
+    dft_clin_dat,
+    list(
+      dat = dat,
+      name = short_name,
+      subfolder = cohort
+    )
+  ),
+  .f = clin_output_helper
 # )

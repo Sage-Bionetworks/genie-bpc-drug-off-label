@@ -206,6 +206,18 @@ dft_clin_dat_wide %<>%
     )
   )
 
+# Remove any investigational drug regimens from the dataset.
+dft_clin_dat_wide %<>%
+  mutate(
+    hreg = purrr::map(
+      .x = hreg,
+      .f = \(x) {
+        x %>%
+          filter(str_detect(regimen_drugs, "Investigational Drug", negate = T))
+      }
+    )
+  )
+
 
 # When you do add in a drugs dataset, do it here!
 
@@ -221,6 +233,111 @@ readr::write_rds(
 
 
 
+create_drug_dat <- function(dat_reg) {
+  
+  dat_drug <- dat_reg %>%
+    select(
+      record_id, ca_seq, regimen_number,
+      matches("_[1-5]$"),
+      matches("tt_os_d[1-5]_days$")
+    ) %>%
+    mutate(
+      across(
+        .cols = -c(record_id, ca_seq, regimen_number),
+        .fn = as.character # for now
+      ) 
+    )
+  
+  dat_drug %<>%
+    pivot_longer(
+      cols = -c(record_id, ca_seq, regimen_number)
+    ) %>%
+    mutate(
+      drug_number = readr::parse_number(name),
+      # pattern for most variables:
+      name = str_replace(name, "_[1-5]$", ""),
+      # pattern for the tt_os_d[#]_days variables:
+      name = str_replace(name, "^tt_os_d[1-5]_days$", "tt_os_days")
+    ) %>%
+    pivot_wider(
+      names_from = name,
+      values_from = value
+    )
+  
+  dat_drug %<>% 
+    rename(agent = drugs_drug) 
+  
+  dat_drug %<>%
+    filter(!is.na(agent)) %>%
+    mutate(
+      # agent = str_replace(agent, "\\(.*\\)$", "")
+      # The above is the correct regex, but there's one truncated synonym list
+      #   which is too long, so we never see the ')' character.  Instead:
+      agent = str_replace(agent, "\\(.*", "")
+    )
+  
+  dat_drug %<>%
+    mutate(
+      across(
+        .cols = matches("_int|_days$"),
+        .fns = as.numeric
+      )
+    )
+  
+  return(dat_drug)
+}
+
+hreg_test <- pull(dft_clin_dat_wide, hreg)[[5]]
+create_drug_dat(hreg_test)
+
+drug_test <- hreg_test %>%
+  select(
+    record_id, ca_seq, regimen_number,
+    matches("_[1-5]$"),
+    matches("tt_os_d[1-5]_days$")
+  ) %>%
+  mutate(
+    across(
+      .cols = -c(record_id, ca_seq, regimen_number),
+      .fn = as.character # for now
+    ) 
+  )
+
+drug_test %<>%
+  pivot_longer(
+    cols = -c(record_id, ca_seq, regimen_number)
+  ) %>%
+  mutate(
+    drug_number = readr::parse_number(name),
+    # pattern for most variables:
+    name = str_replace(name, "_[1-5]$", ""),
+    # pattern for the tt_os_d[#]_days variables:
+    name = str_replace(name, "^tt_os_d[1-5]_days$", "tt_os_days")
+  ) %>%
+  pivot_wider(
+    names_from = name,
+    values_from = value
+  )
+
+drug_test %<>% 
+  rename(agent = drugs_drug) 
+
+drug_test %<>%
+  filter(!is.na(agent)) %>%
+  mutate(
+    # agent = str_replace(agent, "\\(.*\\)$", "")
+    # The above is the correct regex, but there's one truncated synonym list
+    #   which is too long, so we never see the ')' character.  Instead:
+    agent = str_replace(agent, "\\(.*", "")
+  )
+
+drug_test %<>%
+  mutate(
+    across(
+      .cols = matches("_int|_days$"),
+      .fns = as.numeric
+    )
+  )
 
 
 
@@ -327,4 +444,4 @@ purrr::pwalk(
     )
   ),
   .f = clin_output_helper
-# )
+)

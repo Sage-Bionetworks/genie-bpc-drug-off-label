@@ -123,3 +123,18 @@ hreg_all %>%
 Not that illuminating, just tells us that prostate and breast cancer again account for most of the work.
 
 
+
+```{r}
+hreg_all %>% 
+  filter(reg_overlaps_with_any) %>%
+  count(cohort, record_id, ca_seq, sort = T)
+
+
+test_case <- hreg_all %>%
+  filter(cohort %in% "BLADDER" & record_id %in% 'GENIE-DFCI-091449' & ca_seq %in% 1)
+
+
+
+```
+
+

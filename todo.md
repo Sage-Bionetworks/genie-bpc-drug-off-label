@@ -6,6 +6,5 @@ Questions to answer:
   - easier to do once we have drug datasets.
   
 Fixes to make:
-- Find a way to show some specific cases of regimens that overlap.
   - I was thinking a table, but a figure makes way more sense now that I think
   

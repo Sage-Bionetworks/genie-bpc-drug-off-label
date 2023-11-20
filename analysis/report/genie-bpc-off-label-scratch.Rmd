@@ -130,45 +130,53 @@ dft_overlap_cases <- hreg_all %>%
   filter(reg_overlaps_with_any) %>%
   count(cohort, record_id, ca_seq, sort = T)
 
+set.seed(123)
+dft_over_ex <- dft_overlap_cases %>%
+  group_by(cohort) %>%
+  sample_n(size = 3) %>%
+  ungroup(.)
+
+dft_over_ex %<>%
+  mutate(
+    drug_sub_case = purrr::pmap(
+      .l = list(c = cohort, r = record_id, s = ca_seq),
+      .f = \(c,r,s) {
+        hdrug_all %>%
+          filter(
+            cohort %in% c &
+              record_id %in% r & 
+              ca_seq %in% s
+          )
+      }
+    )
+  ) %>%
+  mutate(
+    gg_drug_case = purrr::map(
+      .x = drug_sub_case,
+      .f = plot_drug
+    )
+  )
+
+dft_over_ex %<>%
+
+
+
 # Select some random cases - do plots for all of them, have a look.
 
 # test_case <- hreg_all %>%
 #   filter(cohort %in% "BLADDER" & record_id %in% 'GENIE-DFCI-091449' & ca_seq %in% 1)
 
-test_case <- hdrug_all %>%
-  filter(
-    cohort %in% "BLADDER" & 
-      record_id %in% 'GENIE-DFCI-091449' & 
-      ca_seq %in% 1
-  )
-
-plot_drug <- function(dat_drug_sub) {
-  if (unique(length(dat_drug_sub$record_id)) > 1) {
-    cli::cli_alert_danger("Function only intended to work on one person.  More than one exists in the input data")
-  }
-  
-  dat_drug_sub %<>%
-    arrange(regimen_number, dx_drug_start_int) %>%
-    mutate(
-      agent_f = forcats::fct_inorder(agent),
-      agent_f = forcats::fct_rev(agent_f),
-      regimen_number_f = factor(regimen_number),
-      start_yr = dx_drug_start_int / 365.25,
-      end_yr = dx_drug_end_or_lastadm_int / 365.25
-    )
-  
-  gg <- ggplot(
-    dat_drug_sub,
-    aes(xmin = start_yr, xmax = end_yr, y = agent_f, color = regimen_number_f),
-  ) + 
-    geom_linerange(size = 2) +
-    theme_classic() +
-    labs(x = "Years from dx")
-  
-  return(gg)
-}
-
-plot_drug(test_case)
+# test_case <- hdrug_all %>%
+#   filter(
+#     cohort %in% "CRC" & 
+#       record_id %in% 'GENIE-MSK-P-0016227' & 
+#       ca_seq %in% 0
+#   )
+# plot_drug(test_case)
 ```
+
+### Example cases from each cohort
+
+
 
 

@@ -2,9 +2,7 @@ Questions to answer:
 
 - How often to regimens overlap with one another?
 - What drugs are most commonly included in overlapping regimens?
-- (minor) How often are dx_drug_end... and dx_drug_end_or_last_adm... different?
-  - easier to do once we have drug datasets.
   
-Fixes to make:
-  - I was thinking a table, but a figure makes way more sense now that I think
+Stuff to ask Jen:
   
+- I'm generally using `dx_drug_end_or_lastadm_int` over `dx_drug_end` due to (1) completeness and (2) it makes more sense to me for our project.  Thoughts? 

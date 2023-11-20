@@ -1,10 +1,11 @@
 
 plot_drug <- function(
     dat_drug_sub,
-    pal = c("#EBAC23", "#B80058", "#008CF9", "#006E00", "#00BBAD", "#D163E6", "#B24502", "#FF9287", "#5954D6", "#00C6F8", "#878500", "#00A76C", "#BDBDBD"),
+    pal = rep(c("#EBAC23", "#B80058", "#008CF9", "#006E00", "#00BBAD", "#D163E6", "#B24502", "#FF9287", "#5954D6", "#00C6F8", "#878500", "#00A76C", "#BDBDBD"),4),
     plot_title = NULL,
     plot_subtitle = "Colors represent regimen coding",
-    rect_offset = 0.4
+    rect_offset = 0.4,
+    return_plotly = F
 ) {
   if (length(unique(dat_drug_sub$record_id)) > 1) {
     cli::cli_abort(
@@ -93,7 +94,10 @@ plot_drug <- function(
       plot.title.position = "plot"
     )
   
-  
-  return(gg)
+  if (return_plotly) {
+    return(plotly::ggplotly(gg, tooltip = 'text'))
+  } else {
+    return(gg)
+  }
 }
 

@@ -2,7 +2,11 @@
 title: "Off-Label & Off-Guideline Project"
 author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: false
+    theme: paper
 editor_options: 
   chunk_output_type: console
 ---
@@ -152,5 +156,178 @@ DT::datatable(dfp_reg_sum, options = list(DisplayLength = 25))
 ```
 
 
+```{r}
+dft_cohort_cases %>%
+  select(cohort, hdrug)
+```
 
+
+```{r}
+dft_hreg_cohort <- dft_cohort_cases %>%
+  select(hreg) %>%
+  unnest(hreg) %>%
+  fix_cohort_names(.)
+
+dft_hdrug_cohort <- dft_cohort_cases %>%
+  select(cohort, hdrug) %>%
+  unnest(hdrug)
+```
+
+
+### R1.3 Rules for building lines 
+
+*Note: This deals with patients of all stages for the moment.  I know that's an abuse of the term "lines of therapy" but I'm just trying to address the strategy for restacking drugs into therapy lines.
+
+At our October meeting we discussed the intricacies of BPC cancer regimens and how they can be overlapping, ajoining, etc. depending on the type of therapy addressed.  Jeremy proposed a simple start for this:
+
+- The first line is the first aggregation of anti-cancer therapies.  This means that they must overlap, but they do not need to start on the same day.
+
+After looking into the regimen data a bit further I would suggest that we need some pre-processing steps as well.  These include:
+
+1. For two drug uses that start and end on adjoining days, or overlap further, we should join them into one "use".  
+  - Examples:  GENIE-DFCI-008121 in the CRC cohort, regimens 2 and 3. GENIE-DFCI-053242 for bicalutamide below.
+2. Any drug uses of zero days (to the best of our knowledge) should be eliminated.  I believe many of these just appear to be zero days because there is not yet a confirmed discontinuation date.
+  - Examples:  GENIE-DFCI-007616 in the NSCLC cohort, regimen 3.
+  
+#### Example case #1
+
+The following plot is **interactive** - hover over each rectangle for more information.  The colors are the GENIE BPC regimen number.
+
+This person's first line would be a four drug regimen, which happens to be their regimen 1 in GENIE BPC.
+
+```{r, include = T}
+dft_hdrug_cohort %>%
+  filter(record_id %in% 'GENIE-MSK-P-0020681') %>%
+  plot_drug(., return_plotly = T)
+```
+
+**Proposed handling:** This person's first line would be a four drug regimen of Floxuridine and the 3 drugs that are part of BPC regimen #2.
+
+#### Example case #2
+
+```{r, include = T}
+dft_hdrug_cohort %>%
+  filter(record_id %in% 'GENIE-DFCI-053242') %>%
+  plot_drug(., return_plotly = T)
+```
+
+**Proposed handling:** This example would combine the Bicalutamide regimen's into one use in preprocessing.  The first line would be docetaxel, leuprolide and bicalutamide.  The Abiraterone Acetate administration would not cound in the first line because the docetaxel administration ended before this was started.
+
+### R1.4 First LoT
+
+If we apply the rules above we get the following drug aggregations as the first lines of therapy from metastasis: *work in progress*
+
+**WIP**
+  
+  
+```{r, include = F}
+
+dft_hreg_cohort %>% 
+  filter(record_id %in% 'GENIE-VICC-116953')
+
+dft_overlap_cases <- tribble(
+  ~cohort, ~record_id, 
+  'Breast', "GENIE-DFCI-000701", # possible sequence, not overlapping
+  'Breast', 'GENIE-VICC-568921', # possible sequence, not overlapping
+  'CRC', 'GENIE-VICC-116953', # stop/start lots
+  'CRC', "GENIE-MSK-P-0007135", # stop/start lots
+  'Pancreas', 'GENIE-MSK-P-0010984', # large buildup
+  'CRC', 'GENIE-VICC-499960', # all over
+) %>%
+  mutate(ca_seq = 0)
+
+
+dft_over_ex <- dft_overlap_cases
+
+dft_over_ex %<>%
+  mutate(
+    drug_sub_case = purrr::pmap(
+      .l = list(c = cohort, r = record_id, s = ca_seq),
+      .f = \(c,r,s) {
+        dft_hdrug_cohort %>%
+          filter(
+            cohort %in% c &
+              record_id %in% r & 
+              ca_seq %in% s
+          )
+      }
+    )
+  ) %>%
+  mutate(
+    gg_drug_case = purrr::map(
+      .x = drug_sub_case,
+      .f = plot_drug
+    )
+  )
+
+dft_over_ex %<>%
+  mutate(
+    plt_drug_case = purrr::map(
+      .x = gg_drug_case,
+      .f = \(x) {
+        plotly::ggplotly(x, tooltip = 'text')
+      }
+    )
+  )
+  
+
+
+```
+
+### R1.5 Interesting cases to consider
+
+#### Possible sequence, not overlapping
+
+It's common in the breast cancer cohort to see a (seemingly planned) progression of drugs coded as one regimen, but they're not technically overlapping:
+
+```{r, include = T}
+dft_over_ex$plt_drug_case[[1]]
+```
+
+
+```{r, include = T}
+dft_over_ex$plt_drug_case[[2]]
+```
+
+#### Many stops and starts
+
+This is especially common in the CRC cohort:
+
+```{r, include = T}
+dft_over_ex$plt_drug_case[[3]]
+```
+
+```{r, include = T}
+dft_over_ex$plt_drug_case[[4]]
+```
+
+This begs the question of whether we want to combine drug administrations which are close but not quite overlapping.
+
+#### Large buildup of for one line
+
+Occasionally someone would qualify for something like a 7-drug regimen:
+
+```{r, include = T}
+dft_over_ex$plt_drug_case[[5]]
+```
+
+#### Generally complex
+
+```{r, include = T}
+dft_over_ex$plt_drug_case[[6]]
+```
+
+
+
+
+
+
+
+
+
+
+## Upcoming work
+
+- Assess Jeremy's drug database to see the overlap with the drug information represented in our cohorts.
+- Think about how we can encode cancer types for our cohorts (oncotree, icd, custom text, etc).  What type of information do we have on each one of our cases, and how is it associated to the case (e.g. oncotree -> sample, ICD -> ca_seq, etc.)  How does this associate with Jeremy's semantics?
 

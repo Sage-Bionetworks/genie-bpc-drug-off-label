@@ -127,14 +127,31 @@ Not that illuminating, just tells us that prostate and breast cancer again accou
 
 ```{r}
 dft_overlap_cases <- hreg_all %>% 
+  # Remove the ones that are 100% not surprising.
+  filter(!str_detect(regimen_drugs, "Leuprolide Acetate")) %>%
+  filter(!str_detect(regimen_drugs, "Goserlin Acetate")) %>%
+  filter(!str_detect(regimen_drugs, "Triptorelin")) %>%
+  filter(!str_detect(regimen_drugs, "Histrelin Acetate")) %>%
+  # recalculate the overlap now...
+  group_by(cohort, record_id, ca_seq) %>%
+  mutate(
+    reg_overlaps_with_any = any_time_overlaps(
+      t_start = dx_reg_start_int,
+      t_end = dx_reg_end_or_lastadm_all_int
+    )
+  ) %>%
+  ungroup(.) %>%
   filter(reg_overlaps_with_any) %>%
   filter(ca_seq %in% 0) %>% # relevant to our first question, easiest cases.
-  count(cohort, record_id, ca_seq, sort = T)
+  count(cohort, record_id, ca_seq, sort = T) %>%
+  fix_cohort_names(.)
+
+
 
 set.seed(123)
 dft_over_ex <- dft_overlap_cases %>%
   group_by(cohort) %>%
-  sample_n(size = min(3, n())) %>%
+  sample_n(size = min(5, n())) %>%
   ungroup(.)
 
 dft_over_ex %<>%
@@ -191,6 +208,31 @@ l <- htmltools::tagList()
 for (i in 1:nrow(dft_over_ex)) 
   l[[i]] = as_widget(dft_over_ex$plt_drug_case[[i]])
 l
+```
+
+
+
+
+
+```{r, eval = F}
+# Good function for scrolling, may need to be adapated.
+pick_random_person <- function(seed = NULL) {
+  if (is.null(seed)) {
+    seed <- sample.int(10^7, size = 1)
+    cli::cli_inform("Seed is {seed}")
+  }
+  set.seed(seed)
+  person <- dft_hdrug_cohort$record_id %>%
+    unique %>%
+    sample(size = 1) 
+  
+  cli::cli_inform("record_id: {person}")
+  return(person)
+}
+
+dft_hdrug_cohort %>%
+  filter(record_id %in% 'GENIE-VICC-568921') %>% 
+  plot_drug(return_plotly = T)
 ```
 
 

@@ -228,6 +228,10 @@ dft_clin_dat_wide %<>%
   )
 
 
+# A few of the cohort names just annoy me:
+dft_clin_dat_wide %<>% fix_cohort_names
+
+
 readr::write_rds(
   file = here('data', 'no_ca_seq_filter', 'clin_dat_wide.rds'),
   x = dft_clin_dat_wide
@@ -259,8 +263,7 @@ dft_clin_dat_wide %<>%
 
 # You will now notice that the ca_non_ind column has no data, as expected:
 # lapply(dft_clin_dat_wide$ca_non_ind, nrow)
-# So we can go ahead and remove it for coherence:
-dft_clin_dat_wide %<>% select(-ca_non_ind)
+# We could delete it for coherence, but I'm relying on having it so... nevermind.
 
 dft_clin_dat_wide %<>%
   # for the patient column we'll just limit to those which are in the ca_ind column:

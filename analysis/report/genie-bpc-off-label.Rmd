@@ -3,12 +3,14 @@ title: "Off-Label & Off-Guideline Project"
 author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = F,
-  include = T,
+  include = F,
   warning = F,
   message = F,
   fig.width = 7,
@@ -25,157 +27,100 @@ library(fs); library(purrr); library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 ```
 
+```{r}
+gdtools::register_gfont('Roboto')
+set_flextable_defaults(
+  font.size = 10,
+  theme_fun = theme_booktabs,
+  font.family = 'Roboto'
+)
+
+
+```
+
+
 ## Introduction
 
 This is a working document for analyses related to the Off-label & Off-guideline manuscript chaired by Jeremy Warner.
 
+The regimen/drug data is filtered in all tables to **exclude Investigational Drugs**.
+
 Some important filtering of the raw BPC data we will apply to all items except for R1.1:
 
-- Only regimens associated with the first index cancer for each person will be analyzed.  
-  - This also effectively handles a convention in the BPC data, which is to have two regimen lines if a regimen could potentially be associated with more than one cancer.
-- For those with a non-index cancer, their index cancer must precede the non-index cancer to be included.  
+- Only participants with a **single** cancer diagnosis are included ("first and only" cancers in GENIE BPC).
   
 **Definitions:**
 
 - *index cancer* - The cancer diagnosis that qualified the participant for curation into a BPC cohort (e.g. to be in the prostate cohort you must have a prostate cancer matching a set of Oncotree codes).
+- *F&O* - First and only cancer diagnosis.  Meaning that the only known cancer for this participant was the one that qualitified them for inclusion in a GENIE BPC cohort.
 - *repeat regimens* - If a participant has a regimen with drugs {A,B,C} and the very next regimen in their record is {A,B,C} again, that second regimen is a repeat regimen.  If they use {A,B,C,D} or {A,B} in their next regimen that doesn't count.
 
 
 
 ```{r}
-# For this first bit we need the raw data:
-dft_raw_data <- load_all_raw_data_of_type('cancer_level_dataset_index')
-
-dft_raw_data <- left_join(
-  dft_raw_data,
-  load_all_raw_data_of_type('cancer_level_dataset_non_index'),
-  by = "cohort"
+dft_all_cases <- readr::read_rds(
+  here('data', 'no_ca_seq_filter', 'clin_dat_wide.rds')
 )
 
-# Test case if you like:
-# ca_ind_test <- dft_raw_data %>% slice(1) %>% pull(cancer_level_dataset_index) %>% `[[`(1)
-# ca_non_ind_test <- dft_raw_data %>% slice(1) %>% pull(cancer_level_dataset_non_index) %>% `[[`(1)
-# summarize_records_by_index(ca_ind_test, ca_non_ind_test)
+dft_cohort_cases <- readr::read_rds(
+  here('data', 'cohort', 'clin_dat_wide.rds')
+)
 
-dft_raw_data %<>%
-  mutate(
-    sum = purrr::map2(
-      .x = cancer_level_dataset_index,
-      .y = cancer_level_dataset_non_index,
-      .f = (function(x, y) {
-        summarize_records_by_index(
-          dat_ind = x,
-          dat_non_ind = y)
-      })
-    )
-  )
-
-dft_index <- dft_raw_data %>% select(sum) %>% unnest(sum)
-
-# Note that we have some people with more than one row, but it's because they're in multiple cohorts:
-# dft_index %>% count(record_id, sort = T)
-# dft_index %>% filter(record_id %in% c('GENIE-DFCI-085643', 'GENIE-MSK-P-0002880'))
-
-# Should be zero rows:
-# dft_index %>%
-#   filter(has_non_index_cancer & (ca_seq_of_first_non_index == ca_seq_of_first_index))
-```
-
-
-```{r}
-dft_filtering_impact <- dft_index %>%
-  group_by(cohort) %>%
-  summarize(
-    n = n(),
-    non_index = sum(has_non_index_cancer, na.rm = T),
-    non_index_before_index = sum(has_non_index_cancer & 
-      (ca_seq_of_first_non_index < ca_seq_of_first_index), na.rm = T),
-    our_cohort = n - non_index_before_index,
-    mult_index = sum(multiple_index_cancers, na.rm = T),
-    .groups = 'drop'
-  ) 
-
+dft_filtering_impact <- bind_rows(
+  mutate(summarize_cohort(dft_all_cases), filt = "Raw"),
+  mutate(summarize_cohort(dft_cohort_cases), filt = "First & Only")
+)
 
 dfp_filtering_impact <- dft_filtering_impact %>%
-  mutate(
-    across(
-      .cols = c(non_index, non_index_before_index, our_cohort, mult_index),
-      .fns = (function(a) n_pct_str(a, n))
-    )
+  pivot_longer(
+    cols = -c(cohort, filt),
+    names_to = "quantity"
+  )  %>%
+  pivot_wider(
+    names_from = "cohort",
+    values_from = "value"
   ) %>%
-  rename(
-    `Number with any non-index cancer` = non_index,
-    `Number with a non-index cancer before first index cancer` = non_index_before_index,
-    `Our cohort` = our_cohort,
-    `Number with greater than one index cancer` = mult_index
-  ) # %>%
-# select(-`Our cohort`) # leave open for now.
-    
-  
-  # summarize(
-  #   n = n(),
-  #   `Number with any non-index cancer` = sum(has_non_index_cancer, na.rm = T),
-  #   `Number with a non-index cancer before first index cancer` = sum(has_non_index_cancer & 
-  #     (ca_seq_of_first_non_index < ca_seq_of_first_index), na.rm = T),
-  #   `Number with greater than one index cancer` = sum(multiple_index_cancers, na.rm = T),
-  #   
-  # )
+  select(quantity, filt, everything()) 
 
 dfp_filtering_impact %<>%
-  mutate(n = glue("{n}")) %>%
-  pivot_longer(
-    cols = -cohort,
-  ) %>%
-  pivot_wider(
-    names_from = cohort,
-    values_from = value
-  ) %>%
-  rename(` ` = name) 
+  mutate(quantity = forcats::fct_inorder(quantity)) %>%
+  arrange(quantity, desc(filt))
 ```
 
 
 
 ## Content
 
-### R1.1 Cohort filtering impact
+### *R1.1 Cohort filtering impact
 
-As stated in the introduction, we filter our cohort to only the first index cancer case and also exclude those who have an non-index cancer before their first cancer diagnosis.  The following table assesses the impact of these filters.  Each entry describes the number of **participants** which meet the criterion.
+Now that we're filtering to F&O, we have some room to describe additional quanitites of our cohort filtering.  Four quantities are shown:
+
+- `n_pts` - The number of unique patients.
+- `n_cancers` - The number of cancers in those patients.  Note that this is the same for the First & Only cohort because each person has exactly one cancer.
+- `n_reg` - The number of regimens, using the unaltered definition used in GENIE BPC.  This does not include invesigational 
+- `n_unique_drug` - The number of unique drugs observed among all the regimens.
 
 ```{r, include = T}
 dfp_filtering_impact %>%
-  huxtable(.) %>%
-  theme_article(.)
+  flextable(.) %>%
+  flextable::merge_v(j = 'quantity') %>%
+  flextable::fix_border_issues(.) %>%
+  flextable::valign(j = 'quantity', valign = 'top') %>%
+  flextable::bg(i = c(2,4,6,8), bg = '#e6ecf2')
 ```
 
-
-*Comment:* In the above table I've labeled "Our cohort" as the number of participants less those that have a non-index cancer before the index cancer.  There is another choice, which is to eliminate **all** participants with more than one cancer.  The tradeoff here is:
-
-- This cohort will be easier to handle, as we won't have to make a decision about handling the followup period after the non-index cancer (for example, censor the data from there).
-- We will lose more participants, and not a random set.
-
-I've gone with the less stringent filter today so that the remaining content includes more information.
+From this point on the tables deal only with the *First & Only* cases.
 
 
 
 ```{r}
-dft_all_reg <- load_all_data_of_type("reg")
-
-# select each reg dataset to have only the columns we need for the time being:
-dft_all_reg %<>%
-  mutate(
-    reg = purrr::map(
-      .x = reg,
-      .f = (function(d) {
-        select(
-          d, 
-          record_id, ca_seq, regimen_number,
-          regimen_drugs)
-      })
-    )
-  ) %>%
-  unnest(reg)
-
-dfp_reg_sum <- dft_all_reg %>% 
+dfp_reg_sum <- dft_cohort_cases %>% 
+  select(cohort, hreg) %>%
+  mutate(hreg = purrr::map(
+    .x = hreg,
+    .f = \(x) select(x, -cohort)
+  )) %>%
+  unnest(hreg) %>%
   group_by(cohort, regimen_drugs) %>%
   summarize(
     n_regimens = n(),
@@ -194,223 +139,16 @@ dfp_reg_sum %>%
   )
 ```
 
-### R1.2 Regimen drugs
+### *R1.2 Regimen drugs
 
-See the **attached CSV** (regimen_counts_by_cohort.csv) for the full list of regimens observed in each cohort.
+See the **attached CSV** (regimen_counts_by_cohort.csv) for the full list of regimens observed in each cohort.  Again, this does not include any regimens with investigational agents, and we have filtered each group to F&O cancers.
 
 For convenience, the following table supports simple text searching (not case sensitive).  For example, if you type "Carboplatin bladder" you should see all summaries for the drug carboplatin in the bladder cohort.
 
-These summaries have not removed repeat regimens.  See R1.5 for context there.
-
 Each row shows the number of regimens with those drugs we have in the data (`n_regimens`) and the number of people who had at least one regimen with those exact drugs (`n_people`).
 
-```{r print_reg_table, show = T}
-DT::datatable(dfp_reg_sum, options = list(iDisplayLength = 25))
+```{r print_reg_table, show = T, include = T}
+DT::datatable(dfp_reg_sum, options = list(DisplayLength = 25))
 ```
-
-
-
-
-
-```{r}
-# Figure out repeat regimens in the cohort:
-dft_reg_repeat <- dft_all_reg %>%
-  group_by(cohort, record_id, ca_seq) %>%
-  mutate(
-    is_repeat = lag(regimen_drugs) == regimen_drugs,
-    is_repeat = if_else(is.na(is_repeat), F, is_repeat),
-    # A repeat pair is both the uses of the drug.
-    repeat_pair = is_repeat | lead(is_repeat)
-  ) %>%
-    ungroup
-
-dft_reg_repeat %<>% mutate(cohort_f = forcats::fct_inorder(cohort))
-
-dft_reg_repeat_prop <- dft_reg_repeat %>% 
-  group_by(cohort_f) %>% 
-  summarize(repeat_prop = mean(is_repeat,na.rm = T), .groups = "drop") %>%
-  mutate(
-    lab = glue(
-      "{formatC(round(repeat_prop*100, 1), format = 'f', digits = 1)}%"
-    )
-  )
-
-gg_reg_rep_prop <- ggplot(
-  data = dft_reg_repeat_prop,
-  aes(x = repeat_prop, y = cohort_f)
-) + 
-  geom_col(fill = "#0077bb") + 
-  geom_text(aes(label = lab), hjust = 0, nudge_x = .01) + 
-  theme_bw() +
-  coord_cartesian(xlim = c(0,.2), expand = 0) +
-  scale_y_discrete(limits = rev) + 
-  scale_x_continuous(labels = scales::percent_format()) + 
-  labs(x = "Proportion of regimens which are repeats") + 
-  theme(
-    axis.title.y = element_blank()
-  )
-```
-
-
-### R1.3 Regimen repeats (proportion by cohort)
-
-The following plot show the proportion of regimens which are repeat regimens.  See Introduction for the working defintion of repeat regimen.
-
-```{r, include = T, fig.height = 2}
-gg_reg_rep_prop
-```
-
-
-
-
-
-
-
-
-
-
-```{r}
-dft_reg_repeat_count_by_person <- dft_reg_repeat %>% 
-  group_by(cohort_f, record_id) %>% 
-  summarize(repeat_n = sum(is_repeat,na.rm = T), .groups = "drop")
-
-gg_reg_rep_by_person <- ggplot(
-  data = filter(dft_reg_repeat_count_by_person, repeat_n >= 1),
-  aes(x = repeat_n)
-) + 
-  geom_histogram(fill = "#009988", binwidth = 1, center = 0) + 
-  theme_bw() +
-  facet_wrap(vars(cohort_f)) + 
-  scale_x_continuous(
-    breaks = 0:20,
-    name = "Repeat regimen count"
-  ) + 
-  scale_y_continuous(
-    expand = expansion(add = c(0, 0), mult = c(0, 0.5)),
-    name = "Participants (count)"
-  ) +
-  theme(
-    panel.grid.minor = element_blank()
-  )
-
-
-```
-
-
-### R1.4 Regimen repeat counts (by person)
-
-The following histograms show the number of people with X repeat regimens in each cohort (limited to those with at least one repeat to avoid swamping the plot):
-
-```{r, include = T, fig.height = 4}
-gg_reg_rep_by_person
-```
-
-
-
-
-
-
-
-
-```{r make-repeat-reg-tables, include = T}
-# Most common repeat regimens by cohort:
-dfp_reg_repeat_top_drugs <- dft_reg_repeat %>%
-  filter(is_repeat) %>%
-  count(cohort, regimen_drugs) %>%
-  arrange(cohort, desc(n)) %>%
-  group_by(cohort) %>% 
-  slice(1:8) %>%
-  ungroup(.) 
-
-hux_reg_repeat_top <- dfp_reg_repeat_top_drugs %>% 
-  huxtable(.)
-
-hux_reg_top_list <- split_across(
-  hux_reg_repeat_top, 
-  dfp_reg_repeat_top_drugs$cohort != lag(dfp_reg_repeat_top_drugs$cohort, default = "BLADDER")
-)
-```
-
-### R1.5 Most frequently repeated regimens in each cohort
-
-The following tables show the regimens most frequently repeated in each cohort.  These are raw counts, so it's possible that one person can have more than one repeat.  "Investigational drug" entries are left in for now, but can be easily removed in later analyses.
-
-```{r print_top_reg_lists, include = T, results = 'asis'}
-# print_html(hux_reg_top_list[[1]])
-purrr::walk(
-  .x = hux_reg_top_list, 
-  .f = (function(k) {
-    k %>%
-      theme_article(.) %>%
-      set_position(., value = "left") %>%
-      print_html(.)
-  })
-)
-```
-
-## Questions/Issues
-
-
-
-```{r}
-dft_bladder_ind <- dft_raw_data %>% 
-  filter(cohort %in% "BLADDER") %>%
-  pull(cancer_level_dataset_index) %>%
-  `[[`(.,1)
-
-dft_bladder_non_ind <- dft_raw_data %>% 
-  filter(cohort %in% "BLADDER") %>%
-  pull(cancer_level_dataset_non_index) %>%
-  `[[`(.,1) 
-
-dft_icd_bladder_non_ind <- dft_bladder_non_ind %>%
-  count(ca_d_site) %>%
-  arrange(desc(n)) %>%
-  mutate(total = sum(n)) %>%
-  mutate(str = n_pct_str(n, total, show_d = T, digits = 0)) %>%
-  select(ca_d_site, `n (%)` = str) %>%
-  head(.,6)
-
-# looked up at https://www.ncri.ie/html/icdo3sites
-manual_icd_table <- tribble(
-  ~ca_d_site, ~desc,
-  'C61.9', 'Prostate gland',
-  'C67.9', 'Bladder NOS',
-  'C65.9', 'Renal pelvis',
-  'C66.9', 'Ureter',
-  'C64.9', 'Kidney NOS',
-  'C50.9', 'Breast NOS (excludes Skin of breast C44.5)'
-)
-
-dft_icd_bladder_non_ind %<>%
-  left_join(
-    ., manual_icd_table, by = "ca_d_site"
-  )
-
-
-ht_icd_bladder_non_ind <- dft_icd_bladder_non_ind %>%
-  huxtable(.) 
-
-  
-```
-
-### Index + Nonindex of same type
-
-In table R1.1 Jeremy noticed the unexpectedly high proportion of Bladder cancer cases which have a non-index case.  Typically, the rate of secondary malignancies is around 15-20%, and we're at around 50% in this cohort.
-
-We can address the bladder cancer cohort directly before looking at the general case.  These are the ICD-O-3 codes most commonly associated with the cancers in the **non-index** dataset:
-
-```{r, include = T}
-ht_icd_bladder_non_ind
-```
-
-We get an idea of an answer here:  Lots of the non-index bladder cancer cases are more bladder cancer.  This will differ from virtually any published rate of other malignancies of course, and we may be able to ignore these non-index cases as exclusion criteria in our analysis.
-
-```{r}
-
-```
-
-
-A second question posed by Shawn Sweeney:  Do we have index and non-index cancers of the exact same type.
 
 

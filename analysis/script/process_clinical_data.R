@@ -237,76 +237,48 @@ readr::write_rds(
 
 
 
+# New proposal: we will start with "first and only" cancer cases.
+# This is neatly described in PRISSMM fortunately.
+# Later on this will probably get significantly more annoying.
+help_first_and_only <- function(dat) {
+  filter(dat, ca_seq %in% 0)
+}
 
+dft_clin_dat_wide %<>%
+  mutate(
+    across(
+      .cols = -c(cohort, pt),
+      .fns = (function(l_of_dat) {
+        purrr::map(
+          .x = l_of_dat,
+          .f = help_first_and_only
+        )
+      })
+    )
+  )
 
+# You will now notice that the ca_non_ind column has no data, as expected:
+# lapply(dft_clin_dat_wide$ca_non_ind, nrow)
+# So we can go ahead and remove it for coherence:
+dft_clin_dat_wide %<>% select(-ca_non_ind)
 
+dft_clin_dat_wide %<>%
+  # for the patient column we'll just limit to those which are in the ca_ind column:
+  mutate(
+    pt = purrr::map2(
+      .x = pt,
+      .y = ca_ind,
+      .f = \(x,y) {
+        r <- y$record_id
+        x <- filter(x, record_id %in% r)
+        return(x)
+      }
+    )
+  )
 
-
-
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# # For those with more than one index cancer, we will generally look at only the first one.
-# 
-# dft_clin_dat_wide %<>%
-#   mutate(
-#     ca_ind = purrr::map(
-#       .x = ca_ind,
-#       .f = (function(d) {
-#         d %>%
-#           group_by(record_id) %>%
-#           arrange(ca_seq) %>%
-#           slice(1) %>%
-#           ungroup
-#       })
-#     )
-#   )
-# 
-# 
-# # Filter out index cancers that are preceded by a non-index case.
-# dft_clin_dat_wide %<>%
-#   mutate(
-#     ca_ind = purrr::map2(
-#       .x = ca_ind,
-#       .y = ca_non_ind,
-#       .f = filter_pre_nonindex
-#     )
-#   )
-# 
-# 
-# # Filter the regimen data down to only {record_id, ca_seq} pairs found in the reference data.
-# dft_clin_dat_wide %<>%
-#   mutate(
-#     reg = purrr::map2(
-#       .x = ca_ind,
-#       .y = reg,
-#       .f = (function(ref_dat, dat_to_filter) {
-#         inner_join(
-#           select(ref_dat, record_id, ca_seq),
-#           dat_to_filter,
-#           by = c("record_id", "ca_seq")
-#         )
-#       })
-#     )
-#   )
-# 
-# dft_clin_dat <- dft_clin_dat_wide %>%
-#   pivot_longer(
-#     cols = -cohort,
-#     names_to = "short_name",
-#     values_to = "dat"
-#   )
-# 
-#
-
+# Now it's expected that pt and ca_seq have exactly the same number of rows:
+# dft_clin_dat_wide %>% select(ca_ind, pt)
+    
 
 
 
@@ -314,29 +286,9 @@ readr::write_rds(
 # Output data #
 ###############
 
-clin_output_helper <- function(dat, name, subfolder) {
-  readr::write_rds(
-    x = dat,
-    file = here('data', 'cohort', subfolder, paste0(name, ".rds"))
-  )
-}
-
-# Example for one row:
-# clin_output_helper(
-#   dat = (dft_clin_dat %>% slice(1) %>% pull(dat)),
-#   name = (dft_clin_dat %>% slice(1) %>% pull(short_name)),
-#   subfolder = (dft_clin_dat %>% slice(1) %>% pull(cohort))
-# )
-
-# Do all the rows:
-purrr::pwalk(
-  .l = with(
-    dft_clin_dat,
-    list(
-      dat = dat,
-      name = short_name,
-      subfolder = cohort
-    )
-  ),
-  .f = clin_output_helper
+# I'm switching output formats to just one object:
+readr::write_rds(
+  x = dft_clin_dat_wide,
+  file = here('data', 'cohort', 'clin_dat_wide.rds')
 )
+

@@ -128,12 +128,13 @@ Not that illuminating, just tells us that prostate and breast cancer again accou
 ```{r}
 dft_overlap_cases <- hreg_all %>% 
   filter(reg_overlaps_with_any) %>%
+  filter(ca_seq %in% 0) %>% # relevant to our first question, easiest cases.
   count(cohort, record_id, ca_seq, sort = T)
 
 set.seed(123)
 dft_over_ex <- dft_overlap_cases %>%
   group_by(cohort) %>%
-  sample_n(size = 3) %>%
+  sample_n(size = min(3, n())) %>%
   ungroup(.)
 
 dft_over_ex %<>%
@@ -158,8 +159,15 @@ dft_over_ex %<>%
   )
 
 dft_over_ex %<>%
-
-
+  mutate(
+    plt_drug_case = purrr::map(
+      .x = gg_drug_case,
+      .f = \(x) {
+        plotly::ggplotly(x, tooltip = 'text')
+      }
+    )
+  )
+  
 
 # Select some random cases - do plots for all of them, have a look.
 
@@ -177,6 +185,13 @@ dft_over_ex %<>%
 
 ### Example cases from each cohort
 
+```{r, include = T}
+# print all the plotly plots created
+l <- htmltools::tagList()
+for (i in 1:nrow(dft_over_ex)) 
+  l[[i]] = as_widget(dft_over_ex$plt_drug_case[[i]])
+l
+```
 
 
 

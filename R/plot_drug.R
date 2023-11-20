@@ -3,7 +3,8 @@ plot_drug <- function(
     dat_drug_sub,
     pal = c("#EBAC23", "#B80058", "#008CF9", "#006E00", "#00BBAD", "#D163E6", "#B24502", "#FF9287", "#5954D6", "#00C6F8", "#878500", "#00A76C", "#BDBDBD"),
     plot_title = NULL,
-    plot_subtitle = "Colors represent regimen coding"
+    plot_subtitle = "Colors represent regimen coding",
+    rect_offset = 0.4
 ) {
   if (length(unique(dat_drug_sub$record_id)) > 1) {
     cli::cli_abort(
@@ -30,6 +31,7 @@ plot_drug <- function(
     mutate(
       agent_f = forcats::fct_inorder(agent),
       agent_f = forcats::fct_rev(agent_f),
+      agent_f_pos = as.numeric(agent_f),
       regimen_number_f = factor(regimen_number),
       start_yr = dx_drug_start_int / 365.25,
       end_yr = end_show / 365.25
@@ -46,15 +48,40 @@ plot_drug <- function(
     )
   }
   
+  # Allows plotly later:
+  dat_drug_sub %<>%
+    mutate(
+      interactive_text = glue(
+        "cohort: {dat_drug_sub$cohort}
+        subject: {dat_drug_sub$record_id}
+        ca_seq: {dat_drug_sub$ca_seq}
+        regimen_number: {dat_drug_sub$regimen_number}
+        drug: {dat_drug_sub$agent_f}
+        start: {round(dat_drug_sub$start_yr, 3)} yrs ({dat_drug_sub$dx_drug_start_int} days) after dx.
+        end: {round(dat_drug_sub$dx_drug_end_or_lastadm_int/365.25, 3)} yrs ({dx_drug_end_or_lastadm_int} days) after dx."
+      )
+    )
+  
   gg <- ggplot(
     dat_drug_sub,
-    aes(xmin = start_yr, xmax = end_yr, y = agent_f, color = regimen_number_f),
+    aes(
+      xmin = start_yr, 
+      xmax = end_yr, 
+      ymin = agent_f_pos-rect_offset,
+      ymax = agent_f_pos+rect_offset,
+      fill = regimen_number_f,
+      text = interactive_text
+    ),
   ) + 
-    geom_linerange(size = 2) +
+    geom_rect(size = 2) +
     theme_bw() +
-    scale_color_manual(values = pal, guide = 'none') + 
+    scale_fill_manual(values = pal, guide = 'none') + 
     scale_x_continuous(
       minor_breaks = seq(0, 100, by = (1/6))
+    ) + 
+    scale_y_continuous(
+      breaks = 1:length(levels(dat_drug_sub$agent_f)),
+      labels = levels(dat_drug_sub$agent_f)
     ) + 
     labs(
       title = plot_title,
@@ -69,3 +96,4 @@ plot_drug <- function(
   
   return(gg)
 }
+

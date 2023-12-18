@@ -70,10 +70,33 @@ dft_clin_dat_wide <- dft_clin_dat %>%
   )
 
 
-# dft_clin_dat_wide
-# reg_breast <- dft_clin_dat_wide %>% filter(cohort %in% "BrCa") %>% pull(reg) %>% `[[`(.,1)
-# get_colname_dat(reg_breast)
 
+# To see the nonstandard drugs which will be removed:
+# dft_clin_dat_wide %>%
+#   # they happen to be together - the rows that have this variable.
+#   slice(1:3) %>%
+#   mutate(
+#     nonstandard_drugs = purrr::map(
+#       .x = reg, # they happen to be together - the rows that have this variable.
+#       .f = \(x) {
+#         count(x, regimen_drugs, drugs_admin, sort = T) %>%
+#           filter(!is.na(drugs_admin))
+#       }
+#     )
+#   ) %>%
+#   select(cohort, nonstandard_drugs) %>%
+#   unnest(nonstandard_drugs) %>%
+#   group_by(cohort) %>%
+#   slice(1:5)
+
+# Remove drugs with a non-standard administration route (decided Nov 21, 2023)
+dft_clin_dat_wide %<>%
+  mutate(
+    reg = purrr::map(
+      .x = reg,
+      .f = remove_nonstandard_admin_drugs
+    )
+  )
 
 
 # Fix the breast-type deviances in regimen data:
@@ -88,33 +111,6 @@ dft_clin_dat_wide %<>%
     )
   )
 
-
-# Sloppy way to confirm no differences except on breast:
-# 
-# dft_clin_dat_wide %<>%
-#   mutate(
-#     reg = purrr::map(
-#       .x = reg,
-#       .f = \(x) {
-#         arrange(x, record_id, ca_seq, regimen_number)
-#       }
-#     ),
-#     hreg = purrr::map(
-#       .x = hreg,
-#       .f = \(x) {
-#         arrange(x, record_id, ca_seq, regimen_number)
-#       }
-#     )
-#   )
-# dft_clin_dat_wide %>%
-#   select(cohort, reg, hreg) %>%
-#   mutate(
-#     iden = purrr::map2_chr(
-#       .x = reg,
-#       .y = hreg,
-#       .f = \(x,y) {print(waldo::compare(x,y)); return("dummy")}
-#     )
-#   )
 
 
 
@@ -182,6 +178,7 @@ hreg_req_col <- c(
   "tt_pfs_i_and_m_g_days"
 )
 
+
 dft_clin_dat_wide %<>%
   mutate(
     # hreg = harmonized regimen data.
@@ -213,10 +210,18 @@ dft_clin_dat_wide %<>%
       .x = hreg,
       .f = \(x) {
         x %>%
-          filter(str_detect(regimen_drugs, "Investigational Drug", negate = T))
+          filter(
+            str_detect(
+              regimen_drugs, 
+              "Investigational Drug", 
+              negate = T
+              )
+            )
       }
     )
   )
+
+
 
 # Create a drug-keyed dataset:
 dft_clin_dat_wide %<>%

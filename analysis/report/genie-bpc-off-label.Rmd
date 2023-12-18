@@ -49,9 +49,20 @@ This is a working document for analyses related to the Off-label & Off-guideline
 
 The regimen/drug data is filtered in all tables to **exclude Investigational Drugs**.
 
-Some important filtering of the raw BPC data we will apply to all items except for R1.1:
+### Cohort filters
+
+Filtering of the raw BPC data we will apply to all items except for R1.1:
 
 - Only participants with a **single** cancer diagnosis are included ("first and only" cancers in GENIE BPC).
+
+Pre-processing of the data that will apply to all tables and figures:
+
+- "Non-standard" drug administration routes will be eliminated when known.
+  - Our definition of standard and nonstandard comes from the `drugs_admin` variable.  
+  - This variable is **not populated for the pancreas, prostate and NSCLC cohorts**, but only for bladder, breast and colorectal.  This means that we cannot exclude non-standard routes in those three cohorts unless additional rules are added.
+  - The two biggest examples of drugs with non-standard routes are BCG vaccine (intravesical in bladder cohort) and Floxuridine (other route in CRC).
+  - Standard routes are "orally, intravenously or by infusion".
+  -Non-standard routes are "Intraperitoneal (direct into the abdominal cavity), Intrapleural (direct into the pleural space around the lung), Intralesional (direct into a lesion), Intrathecal (by spinal catheter), Intravesical (bladder installation), Other."
   
 **Definitions:**
 
@@ -95,7 +106,7 @@ dfp_filtering_impact %<>%
 
 ## Content
 
-### *R1.1 Cohort filtering impact
+### R1.1 Cohort filtering impact
 
 Now that we're filtering to F&O, we have some room to describe additional quanitites of our cohort filtering.  Four quantities are shown:
 
@@ -117,50 +128,6 @@ From this point on the tables deal only with the *First & Only* cases.
 
 
 
-```{r}
-dfp_reg_sum <- dft_cohort_cases %>% 
-  select(cohort, hreg) %>%
-  mutate(hreg = purrr::map(
-    .x = hreg,
-    .f = \(x) select(x, -cohort)
-  )) %>%
-  unnest(hreg) %>%
-  group_by(cohort, regimen_drugs) %>%
-  summarize(
-    n_regimens = n(),
-    n_people = length(unique(record_id)),
-    .groups = "drop"
-  )
-```
-
-
-```{r, write_excel_data, include = F}
-dfp_reg_sum %>%
-  arrange(cohort, regimen_drugs) %>%
-  readr::write_csv(
-    x = .,
-    file = here('output', 'regimen_counts_by_cohort.csv')
-  )
-```
-
-### *R1.2 Regimen drugs
-
-See the **attached CSV** (regimen_counts_by_cohort.csv) for the full list of regimens observed in each cohort.  Again, this does not include any regimens with investigational agents, and we have filtered each group to F&O cancers.
-
-For convenience, the following table supports simple text searching (not case sensitive).  For example, if you type "Carboplatin bladder" you should see all summaries for the drug carboplatin in the bladder cohort.
-
-Each row shows the number of regimens with those drugs we have in the data (`n_regimens`) and the number of people who had at least one regimen with those exact drugs (`n_people`).
-
-```{r print_reg_table, show = T, include = T}
-DT::datatable(dfp_reg_sum, options = list(DisplayLength = 25))
-```
-
-
-```{r}
-dft_cohort_cases %>%
-  select(cohort, hdrug)
-```
-
 
 ```{r}
 dft_hreg_cohort <- dft_cohort_cases %>%
@@ -174,7 +141,190 @@ dft_hdrug_cohort <- dft_cohort_cases %>%
 ```
 
 
-### R1.3 Rules for building lines 
+
+
+```{r}
+dfp_reg_sum <- dft_hreg_cohort %>%
+  group_by(cohort, regimen_drugs) %>%
+  summarize(
+    n_regimens = n(),
+    n_people = length(unique(record_id)),
+    .groups = "drop"
+  )
+```
+
+
+```{r, write_excel_data_reg, include = F}
+dfp_reg_sum %>%
+  arrange(cohort, regimen_drugs) %>%
+  readr::write_csv(
+    x = .,
+    file = here('output', 'regimen_counts_by_cohort.csv')
+  )
+```
+
+### R1.2a Drugs used (as regimens)
+
+See the **attached CSV** (regimen_counts_by_cohort.csv) for the full list of regimens observed in each cohort.  Again, this does not include any regimens with investigational agents, and we have filtered each group to F&O cancers.
+
+For convenience, the following table supports simple text searching (not case sensitive).  For example, if you type "Carboplatin bladder" you should see all summaries for the drug carboplatin in the bladder cohort.
+
+Each row shows the number of regimens with those drugs we have in the data (`n_regimens`) and the number of people who had at least one regimen with those exact drugs (`n_people`).
+
+```{r print_reg_table, show = T, include = T}
+DT::datatable(dfp_reg_sum, options = list(DisplayLength = 25))
+```
+
+
+
+
+```{r}
+dfp_drug_sum <- dft_hdrug_cohort %>% 
+  group_by(cohort, agent) %>%
+  summarize(
+    n_uses = n(),
+    n_people = length(unique(record_id)),
+    .groups = "drop"
+  )
+```
+
+```{r, write_excel_data_drug, include = F}
+dfp_drug_sum %>%
+  arrange(cohort, agent) %>%
+  readr::write_csv(
+    x = .,
+    file = here('output', 'drug_use_counts_by_cohort.csv')
+  )
+```
+
+### *R1.2b Drugs used (as drugs)
+
+The following content is the same information as the previous table, counted as separate drugs (agents) rather than using the BPC regimen rules.  Each row shows the number of regimens which used that drug in the data (`n_uses`) and the number of people who had at least one regimen using this agent (`n_people`).
+
+See the **attached CSV** (drug_use_counts_by_cohort.csv) for the full list of drugs observed in each cohort.  
+
+
+```{r print_drug_table, show = T, include = T}
+DT::datatable(dfp_drug_sum, options = list(DisplayLength = 25))
+```
+
+
+```{r}
+# fxd = first x days analyses
+dft_hdrug_fxd <- dft_hdrug_cohort %>%
+  group_by(record_id, ca_seq) %>%
+  mutate(
+    dx_first_drug_use_int = min(dx_drug_start_int, na.rm = T)
+  ) %>%
+  ungroup(.)
+
+dfp_first_drug_sum <- dft_hdrug_fxd %>%
+  filter_drugs_first_x_days(
+    ., 
+    x = 0, # within 0 days to start.
+    var_index_time = 'dx_first_drug_use_int'
+  ) %>%
+  group_by(cohort, agent) %>%
+  summarize(
+    # n_uses should be the same as n_people here.
+    n_people = length(unique(record_id)),
+    .groups = "drop"
+  )
+
+dfp_first_30d_drug_sum <- dft_hdrug_fxd %>%
+  filter_drugs_first_x_days(
+    ., 
+    x = 30, # within 30 days.
+    var_index_time = 'dx_first_drug_use_int'
+  ) %>%
+  group_by(cohort, agent) %>%
+  summarize(
+    # n_uses should be the same as n_people here.
+    n_people = length(unique(record_id)),
+    .groups = "drop"
+  )
+```
+
+
+### *R1.3a First drugs used
+
+Drugs which constitute the first recorded start date for each participant.  `n_uses` and `n_people` should be identical here, so we just state the latter.  If two drugs are started at the same time, both would appear in this table.
+
+BPC regimen encoding does not factor into this table at all - we're examining drugs as separate entities and only looking at the time they were started.
+
+```{r, print_first_drug_sum, include = T}
+DT::datatable(dfp_first_drug_sum, options = list(DisplayLength = 25))
+```
+
+### *R1.3b Drugs used within 30 days of first
+
+Drugs used within 30 days of the first drug use.  Similar to the previous table but allowing a 30 day window for the second drug start time.
+
+```{r, print_first_30d_drug_sum, include = T}
+DT::datatable(dfp_first_30d_drug_sum, options = list(DisplayLength = 25))
+```
+
+
+```{r}
+dft_second_drug_t_dist <- dft_hdrug_fxd %>%
+  mutate(
+    sec_drug_diff = dx_drug_start_int - dx_first_drug_use_int
+  ) %>%
+  filter(
+    abs(sec_drug_diff) > 0.5
+  ) %>%
+  arrange(sec_drug_diff) %>%
+  group_by(record_id, ca_seq) %>%
+  slice(1) %>%
+  ungroup(.)
+
+
+gg_sec_drug_t <- plot_time_dist_violin_ecdf(
+  dat = dft_second_drug_t_dist,
+  time_var = "sec_drug_diff",
+  time_var_lab = "Second drug start interval (days from first drug)",
+)
+
+gg_sec_drug_t_400 <- plot_time_dist_violin_ecdf(
+  dat = dft_second_drug_t_dist,
+  time_var = "sec_drug_diff",
+  time_var_lab = "Second drug start interval (days from first drug)",
+  x_coord_cap = 400
+)
+
+```
+
+
+### *R1.3c Second drug start interval distribution
+
+The quantity being displayed here is the time from the start of the first drug to the start of the second drug in days (excluding those started on the same day as the first drug).  
+
+For example, if someone started drug A on day 0, drug B on day 0, and drug C on day 28, this plot would show the difference between drugs A and C, 28 days (repeated for all participants).
+
+```{r, include = T, fig.height = 4}
+gg_sec_drug_t
+```
+
+A version of the same plot zooming in on the first year (approximately), where most of the action is:
+
+```{r, include = T, fig.height = 4}
+gg_sec_drug_t_400
+```
+
+
+
+
+```{r}
+dft_clin_dat_wide$ca_ind[[1]]
+
+```
+
+
+### R1.4a First drugs used (metastatic setting)
+
+
+
+### R2.1 Rules for building lines 
 
 *Note: This deals with patients of all stages for the moment.  I know that's an abuse of the term "lines of therapy" but I'm just trying to address the strategy for restacking drugs into therapy lines.
 
@@ -213,12 +363,7 @@ dft_hdrug_cohort %>%
 
 **Proposed handling:** This example would combine the Bicalutamide regimen's into one use in preprocessing.  The first line would be docetaxel, leuprolide and bicalutamide.  The Abiraterone Acetate administration would not cound in the first line because the docetaxel administration ended before this was started.
 
-### R1.4 First LoT
 
-If we apply the rules above we get the following drug aggregations as the first lines of therapy from metastasis: *work in progress*
-
-**WIP**
-  
   
 ```{r, include = F}
 
@@ -274,7 +419,7 @@ dft_over_ex %<>%
 
 ```
 
-### R1.5 Interesting cases to consider
+### R2.2 Interesting cases to consider
 
 #### Possible sequence, not overlapping
 
@@ -324,6 +469,12 @@ dft_over_ex$plt_drug_case[[6]]
 
 
 
+## *Issues/concerns
+
+From Nov 21, 2023:
+
+1. Double check that the list of regimens (R1.2) is actually from first and only cancers.  **Confirmed by looking at the `ca_seq` variable for the dataframe.**
+2. Confirm that there are no missing drug start times.  **Confirmed, no missing drug start times.  Other info:  About 4% of drugs have a missing `dx_drug_end_int` and vanishingly few (<0.01%) have a missing `dx_drug_end_or_lastadm_int`**
 
 
 ## Upcoming work

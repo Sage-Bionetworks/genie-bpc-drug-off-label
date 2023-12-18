@@ -29,7 +29,6 @@ dft_folders <- tibble::tribble(
 
 # Sets up raw and cleaned data for one cohort (by name)
 dc_help <- function(cohort_name) {
-  fs::dir_create(here("data", "cohort", cohort_name))
   fs::dir_create(here("data-raw", cohort_name))
 }
 # Sets up

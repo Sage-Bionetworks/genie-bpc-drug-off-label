@@ -49,7 +49,7 @@ This is a working document for analyses related to the Off-label & Off-guideline
 
 The regimen/drug data is filtered in all tables to **exclude Investigational Drugs**.
 
-### Cohort filters
+### *Cohort filters
 
 Filtering of the raw BPC data we will apply to all items except for R1.1:
 
@@ -62,7 +62,7 @@ Pre-processing of the data that will apply to all tables and figures:
   - This variable is **not populated for the pancreas, prostate and NSCLC cohorts**, but only for bladder, breast and colorectal.  This means that we cannot exclude non-standard routes in those three cohorts unless additional rules are added.
   - The two biggest examples of drugs with non-standard routes are BCG vaccine (intravesical in bladder cohort) and Floxuridine (other route in CRC).
   - Standard routes are "orally, intravenously or by infusion".
-  -Non-standard routes are "Intraperitoneal (direct into the abdominal cavity), Intrapleural (direct into the pleural space around the lung), Intralesional (direct into a lesion), Intrathecal (by spinal catheter), Intravesical (bladder installation), Other."
+  - Non-standard routes are "Intraperitoneal (direct into the abdominal cavity), Intrapleural (direct into the pleural space around the lung), Intralesional (direct into a lesion), Intrathecal (by spinal catheter), Intravesical (bladder installation), Other."
   
 **Definitions:**
 
@@ -301,13 +301,13 @@ The quantity being displayed here is the time from the start of the first drug t
 
 For example, if someone started drug A on day 0, drug B on day 0, and drug C on day 28, this plot would show the difference between drugs A and C, 28 days (repeated for all participants).
 
-```{r, include = T, fig.height = 4}
+```{r, include = T, fig.height = 3}
 gg_sec_drug_t
 ```
 
 A version of the same plot zooming in on the first year (approximately), where most of the action is:
 
-```{r, include = T, fig.height = 4}
+```{r, include = T, fig.height = 3}
 gg_sec_drug_t_400
 ```
 
@@ -315,13 +315,85 @@ gg_sec_drug_t_400
 
 
 ```{r}
-dft_clin_dat_wide$ca_ind[[1]]
+
+dft_met_timing <- dft_cohort_cases %>%
+  mutate(
+    met_timing = purrr::map(
+      .x = ca_ind,
+      .f = (function(x) {
+        make_dmet_status_block(x) %>%
+          filter(
+            dmet_status %in% "Distant Metastasis"
+          ) %>%
+          # years -> days
+          mutate(dx_met_days = dx_block_start * 365.25) %>%
+          select(
+            record_id,
+            ca_seq,
+            dx_met_days
+          )
+      })
+    )
+  ) %>%
+  select(cohort, met_timing) %>%
+  unnest(met_timing)
+
+dft_hdrug_met <- left_join(
+    dft_hdrug_cohort,
+    dft_met_timing,
+    by = c("cohort", "record_id", "ca_seq")
+  )
+
+dft_hdrug_met %<>%
+  # only cases where a metastasis was noted
+  filter(!is.na(dx_met_days)) %>%
+  mutate(dmet_drug_start_int = dx_drug_start_int - dx_met_days) %>%
+  # only drugs started on or after the time of metastasis
+  filter(dmet_drug_start_int > -0.1) 
+
+dft_hdrug_met %<>%
+  group_by(cohort, record_id, ca_seq) %>%
+  mutate(
+    dmet_first_drug_int = min(
+      dmet_drug_start_int, 
+      na.rm = T
+    )
+  ) %>%
+  ungroup(.)
+
+
+```
+
+
+```{r}
+dfp_first_drug_met_sum <- dft_hdrug_met %>%
+  filter_drugs_first_x_days(
+    ., 
+    x = 0, # within 0 days to start.
+    var_index_time = 'dmet_first_drug_int'
+  ) %>%
+  group_by(cohort, agent) %>%
+  summarize(
+    # n_uses should be the same as n_people here.
+    n_people = length(unique(record_id)),
+    .groups = "drop"
+  )
 
 ```
 
 
 ### R1.4a First drugs used (metastatic setting)
 
+This only examines drugs started on or after a metastatic diagnosis (de novo or not), and of course only in patients where that diagnosis was made at some point.
+
+As with the previous plots, if a second drug was started on the same day as the first drug, it will appear in this table.
+
+
+```{r, include = T}
+DT::datatable(dfp_first_drug_met_sum, options = list(DisplayLength = 25))
+```
+
+Note:  This list has about 70% as many rows (combinations of cohort and agent) as the one for all participants in this cohort.
 
 
 ### R2.1 Rules for building lines 

@@ -6,6 +6,7 @@ execute:
   echo: false
   warning: false
   message: false
+  include: false
 ---
 
 ```{r}
@@ -79,6 +80,8 @@ At this point we've already generated lists of possible off-label uses.  The lis
 Empirically there are about 15 drugs that have (roughly, just eyeballing) dozens of possible violations.  Working backward, one approach is to look at the approval date for these and see if they tend to be earlier than a certain date.  Here is that list:
 
 ```{r}
+#| include: true
+
 dft_freq_viol %>%
   flextable(.) %>%
   autofit(.)
@@ -97,6 +100,7 @@ Suppose we exclude drugs which have a first global approval date of before 1997.
 The following table shows the drugs sorted by global approval date:
 
 ```{r}
+#| include: true  
 DT::datatable(
   dft_first_approvals,
   style = "bootstrap4"
@@ -128,22 +132,32 @@ gg_cutoff_drug_uses <- dft_hdrug_ind %>%
     name = "Cutoff date choice"
   ) + 
   scale_y_continuous(
-    name = "Proportion of <br>drug uses <br>excluded",
+    name = NULL,
+    expand = c(0,0),
     breaks = seq(0, 1, by = 0.25),
     labels = paste0(seq(0, 1, by = 0.25) * 100, "%")
-  ) + 
+  ) +
+  labs(title =  "Proportion of drug uses **excluded**") + 
   theme_bw() + 
-  scale_color_vibrant()
+  scale_color_vibrant() +
+  theme(
+    plot.title = element_markdown(),
+    plot.title.position = "plot"
+  )
     
 ```
 
 The following shows the proportion of drug uses included using various cutoff dates:
 
 ```{r}
+#| include: true
 
+gg_cutoff_drug_uses
 ```
 
+Notes:
 
-
+- Proportion of drug uses probably isn't that meaningful, just getting a rough idea of the impact of this choice.  
+- Using a slightly less conservative cutoff of ~1995 would include many more drug uses in some cohorts.
 
 

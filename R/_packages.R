@@ -19,8 +19,10 @@ library(glue)
 library(lubridate)
 
 library(ggplot2)
+library(khroma)
 library(plotly)
 library(htmltools)
 library(DT)
+library(ggtext)
 
 library(cfmisc)

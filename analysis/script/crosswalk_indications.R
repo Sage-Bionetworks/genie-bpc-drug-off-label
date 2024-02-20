@@ -44,6 +44,23 @@ readr::write_rds(
   here('data', 'warner_materials', 'cw_condition.rds')
 )
 
+
+# One alteration needed for the indications sheet:  Interferon is marked
+#   in BPC as all one drug, and in the indications sheet it is separate 
+#   interferons.  We decided in our January 2024 meeting to consider any approval
+#   for interferon "good enough" in this project.  The easiest way to do that
+#   is replacing the string:
+dft_ind %<>%
+  mutate(
+    component = if_else(
+      str_detect(tolower(component), 'interferon'),
+      "Interferon", component
+    )
+  ) 
+
+
+
+
 bpc_drugs <- dft_hdrug_cohort %>%
   count(agent, sort = T) %>%
   mutate(
@@ -115,7 +132,7 @@ manual_matches <- tribble(
   "Sipuleucel-T", "Sipuleucel T",
   "Ziv-aflibercept", "Ziv Aflibercept",
   "Sorafenib", "Sorafenib Tosylate",
-  "Interferon alfa-2b", "Interferon",
+  # "Interferon alfa-2b", "Interferon", # not needed with the fix above.
   "Tegafur gimeracil oteracil","Tegafurgimeraciloteracil Potassium",
   "Trastuzumab and hyaluronidase", "Trastuzumab/Hyaluronidase-oysk",
   "Pertuzumab and Trastuzumab hyaluronidase", "Pertuzumab-Trastuzumab-Hyaluronidase-ZZXF"

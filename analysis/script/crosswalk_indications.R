@@ -2,7 +2,8 @@ library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dft_ind <- readr::read_csv(
-  here('data-raw', 'manual', 'indications working copy.csv')
+  here('data-raw', 'manual', 'indications working copy.csv'),
+  show_col_types = F
 )
 
 dft_cohort_cases <- readr::read_rds(
@@ -25,15 +26,18 @@ dft_cw_condition <- tribble(
   ~condition, ~cohort,
   "Breast cancer", "Breast",
   "Prostate cancer", "Prostate",
-  "Colorectal cancer", "CRC",
   "Non-small cell lung cancer nonsquamous", "NSCLC", # obviously needs later mapping
-  "Pancreatic cancer", "Pancreas",
-  "Colon cancer", "CRC",
   "Non-small cell lung cancer squamous", "NSCLC",
-  "Bladder cancer", "Bladder",
+  "Non-small cell lung cancer", "NSCLC",
+  "Pancreatic cancer", "Pancreas",
+  "Colorectal cancer", "CRC",
+  "Colon cancer", "CRC",
   "Rectal cancer", "CRC",
-  "Bladder CIS", "Bladder" # I know CIS probably doesn't merit inclusion.
+  "Bladder cancer", "Bladder",
+  "Urothelial carcinoma", "Bladder"
 )
+ dft_cw_condition %<>% arrange(cohort, condition)
+
 
 readr::write_rds(
   dft_cw_condition,
@@ -85,7 +89,8 @@ bpc_drugs %<>%
 trimmed_matches <- bpc_drugs %>%
   filter(!str_detect(agent, "Etoposide")) %>%
   filter(trimmed_in_ind & !found_in_ind) %>%
-  mutate(component = agent_trim) %>%
+  # str_to_sentence decapitalizes the later words to match indications convention.
+  mutate(component = str_to_sentence(agent_trim)) %>%
   select(agent, component)
   
 # For the ones that don't match exactly we'll did some looking:
@@ -103,12 +108,17 @@ manual_matches <- tribble(
   ~component, ~agent, 
   "Paclitaxel nanoparticle albumin-bound", "Nabpaclitaxel",
   "Goserelin", "Goserlin Acetate",
-  "Radium-223", "Radium RA 223 Dichloride",
+  # yes, there's really an extra space here...
+  "Radium-223", "Radium RA 223 Dichloride ",
+  "Lutetium Lu 177 dotatate", "Lutetium Lu 177 Dotatate",
   "Lapatinib", "Lapatinib Ditosylate",
   "Sipuleucel-T", "Sipuleucel T",
   "Ziv-aflibercept", "Ziv Aflibercept",
   "Sorafenib", "Sorafenib Tosylate",
-  "Interferon alfa-2b", "Interferon"
+  "Interferon alfa-2b", "Interferon",
+  "Tegafur gimeracil oteracil","Tegafurgimeraciloteracil Potassium",
+  "Trastuzumab and hyaluronidase", "Trastuzumab/Hyaluronidase-oysk",
+  "Pertuzumab and Trastuzumab hyaluronidase", "Pertuzumab-Trastuzumab-Hyaluronidase-ZZXF"
   # Leaving this one behind:
 #  "Interferon alfa-2b", "Recombinant Interferon Alfa",
 )
@@ -126,23 +136,61 @@ if (dft_cw_drug %>%
   cli_abort("Duplicate agent rows in drug mapping table")
 }
 
+bpc_drugs %>% 
+  filter(!(agent %in% dft_cw_drug$agent))
+
+
 readr::write_rds(
   dft_cw_drug,
   here('data', 'warner_materials', 'cw_drug.rds')
 )
-  
 
-dft_cw_drug_limited <- dft_ind %>%
+# Write a copy of the full thing, just for formatting/location:
+readr::write_rds(
+  dft_ind,
+  here('data', 'warner_materials', 'indications_full.rds')
+)
+
+
+
+
+
+
+# Map the columns we need in the indications over to the PRISSMM names:
+dft_ind_mapped <- left_join(
+  dft_ind,
+  dft_cw_drug,
+  by = "component"
+) %>%
+  rename(mapped_agent = agent)
+
+dft_ind_mapped <- left_join(
+  dft_ind_mapped,
+  dft_cw_condition,
+  by = 'condition'
+) %>%
+  rename(mapped_cohort = cohort)
+
+readr::write_rds(
+  dft_ind_mapped,
+  here('data', 'warner_materials', 'indications_mapped.rds')
+)
+
+
+
+
+dft_ind_limited <- dft_ind_mapped %>%
+  filter(!is.na(mapped_cohort) & !is.na(mapped_agent))
+
+dft_ind_limited %<>%
   filter(!is.na(component)) %>%
   filter(!(component %in% "NONE")) %>% # pending decision here
   filter(regulator %in% "FDA")
 
-
 readr::write_rds(
-  dft_cw_drug_limited,
-  here('data', 'warner_materials', 'cw_drug_limited.rds')
+  dft_ind_limited,
+  here('data', 'warner_materials', 'indications_mapped_limited.rds')
 )
-
 
 
 

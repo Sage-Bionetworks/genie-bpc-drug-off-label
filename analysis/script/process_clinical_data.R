@@ -16,7 +16,8 @@ dft_data_names <- tribble(
 dft_clin_dat <- tibble(
   cohort = dir("data-raw")
 ) %>%
-  mutate(cohort_path = here("data-raw", cohort))
+  mutate(cohort_path = here("data-raw", cohort)) %>%
+  filter(!(cohort %in% "manual"))
 
 folder_load_helper <- function(fold, dn) {
   vec_paths <- fs::dir_ls(fold)
@@ -232,9 +233,55 @@ dft_clin_dat_wide %<>%
     )
   )
 
+# Remove several drugs entirely from the drugs sheet:
+ignored_drugs <- c(
+  "BCG Solution",
+  "BCG Vaccine",
+  "Floxuridine",
+  "ADT/LHRH agonist not specified",
+  "Other antineoplastic",
+  "Other NOS",
+  "Other hormone"
+)
+
+dft_clin_dat_wide %<>%
+  mutate(
+    hdrug = purrr::map(
+      .x = hdrug,
+      .f = \(x) {
+        x %>%
+          filter(!agent %in% ignored_drugs)
+      }
+    )
+  )
+
+# Fix one drug names which cause particular problems down the line.
+# "Etoposide" only has phosphate appended once and it causes some 
+#    headaches on linking to the Warner materials to have both.  Easier to
+#    change the data in this one case.
+dft_clin_dat_wide %<>%
+  mutate(
+    hdrug = purrr::map(
+      .x = hdrug,
+      .f = \(x) {
+        x %>%
+          mutate(
+            agent = if_else(
+              agent %in% "Etoposide Phosphate",
+              "Etoposide",
+              agent
+            )
+          )
+      }
+    )
+  )
+
+
 
 # A few of the cohort names just annoy me:
 dft_clin_dat_wide %<>% fix_cohort_names
+
+
 
 
 readr::write_rds(
@@ -250,7 +297,14 @@ readr::write_rds(
 # This is neatly described in PRISSMM fortunately.
 # Later on this will probably get significantly more annoying.
 help_first_and_only <- function(dat) {
-  filter(dat, ca_seq %in% 0)
+  filter(dat, ca_seq %in% 0) 
+}
+
+help_us_sites <- function(dat) {
+  dat %>%
+    mutate(record_sub = str_sub(record_id, 1, 9)) %>%
+    filter(!(record_sub %in% "GENIE-UHN")) %>%
+    select(-record_sub)
 }
 
 dft_clin_dat_wide %<>%
@@ -260,7 +314,11 @@ dft_clin_dat_wide %<>%
       .fns = (function(l_of_dat) {
         purrr::map(
           .x = l_of_dat,
-          .f = help_first_and_only
+          .f = \(x) {
+            x %>% 
+              help_first_and_only(.) %>%
+              help_us_sites(.)
+          }
         )
       })
     )

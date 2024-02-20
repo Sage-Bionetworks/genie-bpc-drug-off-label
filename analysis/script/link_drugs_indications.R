@@ -3,7 +3,7 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 # Load the indications data (limited to FDA) and crosswalks:
 dft_ind_lim <- readr::read_rds(
-  here('data', 'warner_materials', 'indications_limited.rds')
+  here('data', 'warner_materials', 'indications_mapped_limited.rds')
 )
 dft_cw_condition <- readr::read_rds(
   here('data', 'warner_materials', 'cw_condition.rds')
@@ -16,6 +16,7 @@ dft_cw_drug <- readr::read_rds(
 dft_cohort_cases <- readr::read_rds(
   here('data', 'cohort', 'clin_dat_wide.rds')
 )
+
 dft_hdrug_cohort <- dft_cohort_cases %>%
   select(cohort, hdrug) %>%
   unnest(hdrug)
@@ -23,29 +24,14 @@ dft_hdrug_cohort <- dft_cohort_cases %>%
 
 
 
-# Map the columns we need in the indications over to the PRISSMM names:
-dft_ind_converted <- left_join(
-  dft_ind_lim,
-  dft_cw_drug,
-  by = "component"
-) %>%
-  rename(mapped_agent = agent)
 
-dft_ind_converted <- left_join(
-  dft_ind_converted,
-  dft_cw_condition,
-  by = 'condition'
-) %>%
-  rename(mapped_cohort = cohort)
 
-dft_ind_converted %<>%
-  filter(!is.na(mapped_cohort) & !is.na(mapped_agent))
-
+# Create a full list of "possible" approvals.
 possible_approvals <- left_join(
   (dft_hdrug_cohort %>% 
      select(cohort, record_id, ca_seq, regimen_number, drug_number, agent)
   ),
-  (dft_ind_converted %>%
+  (dft_ind_lim %>%
      select(
        cohort = mapped_cohort,
        agent = mapped_agent,
@@ -95,14 +81,6 @@ readr::write_rds(
 
 
 
-dft_hdrug_app %>%
-  group_by(cohort, agent) %>%
-  summarize(
-    n_uses = n(),
-    n_indicated = sum(ind_exists, na.rm = T),
-    prop_approved = n_indicated / n_uses,
-    .groups = "drop"
-  )
 
 
 

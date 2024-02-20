@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 
 
 ```{r}
-library(fs); library(purrr); library(here)
+library(fs); library(purrr); library(here);
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 ```
 
@@ -54,6 +54,7 @@ The regimen/drug data is filtered in all tables to **exclude Investigational Dru
 Filtering of the raw BPC data we will apply to all items except for R1.1:
 
 - Only participants with a **single** cancer diagnosis are included ("first and only" cancers in GENIE BPC).
+- Only US sites will be considered (we have a small number in Canada in BPC).
 
 Pre-processing of the data that will apply to all tables and figures:
 
@@ -63,6 +64,7 @@ Pre-processing of the data that will apply to all tables and figures:
   - The two biggest examples of drugs with non-standard routes are BCG vaccine (intravesical in bladder cohort) and Floxuridine (other route in CRC).
   - Standard routes are "orally, intravenously or by infusion".
   - Non-standard routes are "Intraperitoneal (direct into the abdominal cavity), Intrapleural (direct into the pleural space around the lung), Intralesional (direct into a lesion), Intrathecal (by spinal catheter), Intravesical (bladder installation), Other."
+- We will also just completely ignore some drugs due to the lack of perfection in the `drugs_admin` variable.  These are currently BCG Vaccine, BCG Solution and Floxuridine.
   
 **Definitions:**
 
@@ -101,6 +103,29 @@ dfp_filtering_impact %<>%
   mutate(quantity = forcats::fct_inorder(quantity)) %>%
   arrange(quantity, desc(filt))
 ```
+
+
+```{r}
+# need to load the crosswalks so we can report them out:
+dft_cw_condition <- readr::read_rds(
+  here('data', 'warner_materials', 'cw_condition.rds')
+)
+dft_cw_drug <- readr::read_rds(
+  here('data', 'warner_materials', 'cw_drug.rds')
+)
+dft_ind_mapped <- readr::read_rds(
+  here('data', 'warner_materials', 'indications_mapped.rds')
+)
+
+```
+
+
+```{r}
+dft_hdrug_ind <- readr::read_rds(
+  here('data', 'linked_approvals', 'hdrug_ind.rds')
+)
+```
+
 
 
 
@@ -553,12 +578,161 @@ The concepts we are joining on are:
 - Warner's `component` is mapped to BPC `cohort`.
 - Warner's `condition` is mapped to BPC `agent`.  This is drug names from the `regimen_drugs` column.
 
-Obviously the text representations of these two concepts are slightly different.  Here are the crosswalks for both:
+Obviously the text representations of these two concepts are slightly different, so we need some crosswalks to link them.  
+
+#### Crosswalk: Conditions
+
+```{r, include = T}
+dft_cw_condition %>%
+  flextable(.) %>% 
+  autofit(.)
+```
+
+All other `condition` entries from the Warner list are unmapped/unused.  The full list of unused conditions is in an appendix.
+
+#### Crosswalk: Component (drug)
+
+Reminder: `agent` is directly pulled GENIE BPC's `regimen_drugs` after splitting up the drugs.  `component` is from Warner's indications sheet.  
+
+```{r, include = T}
+dft_cw_drug %>%
+  select(component, agent, agent_map_type) %>%
+  DT::datatable(.)
+```
+
+Notes:
+
+- `agent_map_type` is just a short description of the strategy I used to make the link.  The levels are:
+  - `exact`: The strings were a perfect (case-ignoring) match.
+  - `trimmed`:  After trimming common suffixes from the BPC data (like "sulfate", "acetate") the strings were a perfect match.
+  - `manual`:  Manual link, by someone with no medical or pharmacology training (!).
+- Mappings worthy of extra scrutiny:
+  - agent = "Interferon" with no information about the specific protein, which is a common entry in BPC.  I mapped this to Interferon alfa-2b just to start the conversation.
+  - Paclitaxel nanoparticle albumin-bound -> Nabpaclitaxel.  Correct?
+  - Trastuzumab is usually "Trastuzumab Emtansine" or "Trastuzumb Deruxtecan" in the BPC data.  It's much more complicated in the indications sheet, so I did not assign a mapping.
+  
 
 
 
 
 
+
+```{r}
+vec_bpc_drugs <- dft_hdrug_ind %>%
+  pull(agent) %>%
+  unique
+
+vec_ind_drugs <- dft_ind_mapped %>%
+  pull(mapped_agent) %>%
+  unique
+
+prop_uses_covered <- dft_hdrug_ind %>%
+  mutate(
+    drug_in_ind = agent %in% vec_ind_drugs
+  ) %>% 
+  summarize(
+    prop_uses_covered = mean(drug_in_ind, na.rm = T)
+  ) %>%
+  pull(prop_uses_covered) 
+
+
+  
+
+```
+
+### *Crosswalk success
+
+- Of the `r length(vec_bpc_drugs)` unique drugs in our BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
+- Of the `r nrow(dft_hdrug_ind)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 1)`% involve a drug which was successfully mapped to a drug in the indications sheet.
+
+
+
+```{r}
+dft_off_label_uses <- dft_hdrug_ind %>%
+  group_by(cohort, agent) %>%
+  summarize(
+    n_uses = n(),
+    n_indicated = sum(ind_exists, na.rm = T),
+    prop_indicated = n_indicated / n_uses, # currently 0 or 1.
+    .groups = "drop"
+  ) %>%
+  filter(prop_indicated %in% 0) %>%
+  select(-c(n_indicated, prop_indicated))
+
+
+dft_hdrug_ind_first_day <- dft_hdrug_fxd %>%
+  filter_drugs_first_x_days(
+    ., 
+    x = 0, # within 0 days to start.
+    var_index_time = 'dx_first_drug_use_int'
+  ) %>%
+  select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
+  left_join(
+    .,
+    dft_hdrug_ind,
+    by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
+  )
+    
+dft_off_label_uses_first_drug <- dft_hdrug_ind_first_day %>%
+  group_by(cohort, agent) %>%
+  summarize(
+    n_uses = n(),
+    n_indicated = sum(ind_exists, na.rm = T),
+    prop_indicated = n_indicated / n_uses, # currently 0 or 1.
+    .groups = "drop"
+  ) %>%
+  filter(prop_indicated %in% 0) %>%
+  select(-c(n_indicated, prop_indicated))
+
+```
+  
+### *R3.1 Off label uses
+
+Our definition of an on-label use is currently any use of a drug which has a matching row in the indications sheet that meets the following criteria:
+
+- Regulator for the approval is FDA.
+- Condition maps to the BPC cohort of the drug use.
+- Component maps to the BPC agent (regimen drug) of the drug use.
+
+Planned expansions to this definition include:
+
+- The drug is started after the approval date.
+- If the drug requires metastatic patient, the drug use started after a metastatic diagnosis.
+
+The following table shows potential **Off-label** uses, which is just any use which doesn't meet the definition above.  For each {cohort, agent} combination we show the number of off-label uses:
+
+```{r, include = T}
+dft_off_label_uses %>%
+  DT::datatable(.)
+```
+
+### *R3.2 Off label use, first drug
+
+The following table is the same as the previous one, except we limit to only the 
+ first day of drug use by each person:
+ 
+```{r, include = T}
+dft_off_label_uses_first_drug %>%
+  DT::datatable(.)
+```
+ 
+
+
+
+
+
+
+
+
+## Indications sheet
+
+The following table shows a few relevant columns from the `indications.csv` sheet.  This is not filtered, so it contains approvals from other regulators.
+
+```{r, include = T}
+dft_ind_mapped %>% 
+  select(component, regulator, date, condition, note, context, stage_or_status) %>%
+  DT::datatable(.)
+```
 
 
 
@@ -570,8 +744,30 @@ From Nov 21, 2023:
 2. Confirm that there are no missing drug start times.  **Confirmed, no missing drug start times.  Other info:  About 4% of drugs have a missing `dx_drug_end_int` and vanishingly few (<0.01%) have a missing `dx_drug_end_or_lastadm_int`**
 
 
+### *Unused conditions
+
+The Warner `indications.csv` sheet contains many conditions which didn't seem to map to any BPC cohort are:
+
+```{r, include = T}
+dft_ind_mapped %>%
+  count(condition) %>%
+  distinct(.) %>%
+  filter(!(condition %in% dft_cw_condition$condition)) %>%
+  arrange(condition) %>%
+  rename(n_rows = n) %>%
+  DT::datatable(.)
+```
+
+Notes:
+
+- The most important condition which is excluded is `"<NONE>"`.  We will need to discuss what those rows represent. 
+- Not all of these conditions describe a drug used in the BPC, and not all of them describe FDA indications (which is our first target).
+
+
+
+
+
+
 ## Upcoming work
 
-- Assess Jeremy's drug database to see the overlap with the drug information represented in our cohorts.
-- Think about how we can encode cancer types for our cohorts (oncotree, icd, custom text, etc).  What type of information do we have on each one of our cases, and how is it associated to the case (e.g. oncotree -> sample, ICD -> ca_seq, etc.)  How does this associate with Jeremy's semantics?
-
+- Expand to checking for metastatic and date of approval.

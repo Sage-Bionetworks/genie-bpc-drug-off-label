@@ -9,4 +9,5 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 fs::dir_create(here('output'))
 fs::dir_create(here('data', 'no_ca_seq_filter'))
 fs::dir_create(here('data', 'warner_materials'))
+fs::dir_create(here('data', 'linked_approvals'))
 

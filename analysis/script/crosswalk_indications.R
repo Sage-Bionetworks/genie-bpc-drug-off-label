@@ -136,8 +136,14 @@ if (dft_cw_drug %>%
   cli_abort("Duplicate agent rows in drug mapping table")
 }
 
-bpc_drugs %>% 
-  filter(!(agent %in% dft_cw_drug$agent))
+
+readr::write_csv(
+  (bpc_drugs |>
+     filter(!(agent %in% dft_cw_drug$agent)) |>
+     select(agent, n)
+   ),
+  here('output', 'bpc_drugs_with_no_component_match.csv')
+)
 
 
 readr::write_rds(

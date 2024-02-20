@@ -575,8 +575,8 @@ To generate a list of potential approvals we will join two datasets:
 
 The concepts we are joining on are:
 
-- Warner's `component` is mapped to BPC `cohort`.
-- Warner's `condition` is mapped to BPC `agent`.  This is drug names from the `regimen_drugs` column.
+- Warner's `condition` is mapped to BPC `cohort`.
+- Warner's `component` is mapped to BPC `agent`.  This is drug names from the `regimen_drugs` column.
 
 Obviously the text representations of these two concepts are slightly different, so we need some crosswalks to link them.  
 

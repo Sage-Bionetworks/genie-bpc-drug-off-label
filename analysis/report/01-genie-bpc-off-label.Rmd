@@ -636,14 +636,17 @@ prop_uses_covered <- dft_hdrug_ind %>%
   pull(prop_uses_covered) 
 
 
-vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)]
+vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %>% 
+  sort %>%
+  paste(., collapse = ", ")
 
 ```
 
 ### *Crosswalk success
 
 - Of the `r length(vec_bpc_drugs)` unique drugs in our BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
-- Of the `r nrow(dft_hdrug_ind)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 1)`% involve a drug which was successfully mapped to a drug in the indications sheet.
+  - The agents which we couldn't map to anything in the indications sheet are: `r vec_bpc_drugs_not_mapped`
+- Of the `r nrow(dft_hdrug_ind)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
 
 
 

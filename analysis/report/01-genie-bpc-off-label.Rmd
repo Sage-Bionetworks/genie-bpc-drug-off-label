@@ -592,7 +592,7 @@ All other `condition` entries from the Warner list are unmapped/unused.  The ful
 
 #### Crosswalk: Component (drug)
 
-Reminder: `agent` is directly pulled GENIE BPC's `regimen_drugs` after splitting up the drugs.  `component` is from Warner's indications sheet.  
+Reminder: `agent` is directly pulled GENIE BPC's `regimen_drugs` after splitting up the drugs.  `component` is from Warner's indications sheet.
 
 ```{r, include = T}
 dft_cw_drug %>%
@@ -607,9 +607,9 @@ Notes:
   - `trimmed`:  After trimming common suffixes from the BPC data (like "sulfate", "acetate") the strings were a perfect match.
   - `manual`:  Manual link, by someone with no medical or pharmacology training (!).
 - Mappings worthy of extra scrutiny:
-  - agent = "Interferon" with no information about the specific protein, which is a common entry in BPC.  I mapped this to Interferon alfa-2b just to start the conversation.
-  - Paclitaxel nanoparticle albumin-bound -> Nabpaclitaxel.  Correct?
-  - Trastuzumab is usually "Trastuzumab Emtansine" or "Trastuzumb Deruxtecan" in the BPC data.  It's much more complicated in the indications sheet, so I did not assign a mapping.
+  - components with interferons were changed to simply "Interferon" to match BPC.
+  - Paclitaxel nanoparticle albumin-bound -> Nabpaclitaxel.  (Verified correct in meeting).
+  - Trastuzumab is complex in the indications sheet.
   
 
 
@@ -636,7 +636,7 @@ prop_uses_covered <- dft_hdrug_ind %>%
   pull(prop_uses_covered) 
 
 
-  
+vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)]
 
 ```
 

@@ -58,19 +58,21 @@ dft_ind %<>%
     )
   ) 
 
-
-
-
 bpc_drugs <- dft_hdrug_cohort %>%
   count(agent, sort = T) %>%
   mutate(
-    found_in_ind = tolower(agent) %in% unique(tolower(dft_ind$component))
+    found_in_ind = tolower(agent) %in% tolower(dft_ind$component),
+    exact_matching_str = dft_ind$component[
+      match(x = tolower(agent), table = tolower(dft_ind$component))
+    ]
   )
 
 exact_matches <- bpc_drugs %>%
   filter(found_in_ind) %>%
-  select(agent) %>%
-  mutate(component = agent)
+  mutate(component = exact_matching_str) %>%
+  select(agent, component)
+
+bpc_drugs %<>% select(-exact_matching_str)
 
 strings_to_trim <- c(
   "Hydrochloride",
@@ -127,7 +129,6 @@ manual_matches <- tribble(
   "Goserelin", "Goserlin Acetate",
   # yes, there's really an extra space here...
   "Radium-223", "Radium RA 223 Dichloride ",
-  "Lutetium Lu 177 dotatate", "Lutetium Lu 177 Dotatate",
   "Lapatinib", "Lapatinib Ditosylate",
   "Sipuleucel-T", "Sipuleucel T",
   "Ziv-aflibercept", "Ziv Aflibercept",
@@ -136,8 +137,6 @@ manual_matches <- tribble(
   "Tegafur gimeracil oteracil","Tegafurgimeraciloteracil Potassium",
   "Trastuzumab and hyaluronidase", "Trastuzumab/Hyaluronidase-oysk",
   "Pertuzumab and Trastuzumab hyaluronidase", "Pertuzumab-Trastuzumab-Hyaluronidase-ZZXF"
-  # Leaving this one behind:
-#  "Interferon alfa-2b", "Recombinant Interferon Alfa",
 )
 
 dft_cw_drug <- rbind(

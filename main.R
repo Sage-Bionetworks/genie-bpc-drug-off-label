@@ -10,6 +10,7 @@ source(here('analysis', 'script', 'create_folders.R'))
 # source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'process_clinical_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
+source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))
 
 rmarkdown::render(

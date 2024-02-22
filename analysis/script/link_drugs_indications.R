@@ -11,6 +11,9 @@ dft_cw_condition <- readr::read_rds(
 dft_cw_drug <- readr::read_rds(
   here('data', 'warner_materials', 'cw_drug.rds')
 )
+vec_excl_drugs <- readr::read_rds(
+  here('data', 'warner_materials', 'old_drugs_list.rds')
+)
 
 # Load and create the hdrug cohort data:
 dft_cohort_cases <- readr::read_rds(
@@ -21,6 +24,12 @@ dft_hdrug_cohort <- dft_cohort_cases %>%
   select(cohort, hdrug) %>%
   unnest(hdrug)
 
+
+
+# Remove drugs which we suspect have inadequate approval documentation.
+dft_hdrug_cohort %<>%
+  filter(!(agent %in% vec_excl_drugs))
+  
 
 
 

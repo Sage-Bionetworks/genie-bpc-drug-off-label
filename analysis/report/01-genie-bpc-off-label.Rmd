@@ -116,7 +116,6 @@ dft_cw_drug <- readr::read_rds(
 dft_ind_mapped <- readr::read_rds(
   here('data', 'warner_materials', 'indications_mapped.rds')
 )
-
 ```
 
 
@@ -703,6 +702,8 @@ Planned expansions to this definition include:
 - If the drug requires metastatic patient, the drug use started after a metastatic diagnosis.
 
 The following table shows potential **Off-label** uses, which is just any use which doesn't meet the definition above.  For each {cohort, agent} combination we show the number of off-label uses:
+
+
 
 ```{r, include = T}
 dft_off_label_uses %>%

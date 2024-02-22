@@ -344,7 +344,44 @@ dft_clin_dat_wide %<>%
 
 # Now it's expected that pt and ca_seq have exactly the same number of rows:
 # dft_clin_dat_wide %>% select(ca_ind, pt)
-    
+
+
+
+
+
+# Add information for whether the participant was metastatic at the time of
+#   starting each agent.
+dft_clin_dat_wide %<>%
+  # for the patient column we'll just limit to those which are in the ca_ind column:
+  mutate(
+    hdrug = purrr::map2(
+      .x = hdrug,
+      .y = ca_ind,
+      # Function: Merge the met time in, check if it's after drug start or not.
+      .f = \(dat_drug, dat_ca_ind) {
+        met_df <- get_dmet_timing(dat_ca_ind) 
+        
+        rtn <- left_join(
+          dat_drug,
+          met_df,
+          by = c('record_id', 'ca_seq'),
+          relationship = "many-to-one"
+        )
+        
+        rtn %<>%
+          mutate(
+            dmet_at_drug_start = case_when(
+              is.na(dx_met_int) ~ F,
+              is.na(dx_drug_start_int) ~ F, # never happens
+              dx_drug_start_int < dx_met_int ~ F,
+              T ~ T
+            )
+          )
+          
+        return(rtn)
+      }
+    )
+  )
 
 
 

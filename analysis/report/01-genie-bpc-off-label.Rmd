@@ -686,6 +686,8 @@ dft_hdrug_ind_first_day <- dft_hdrug_fxd %>%
   )
     
 dft_off_label_uses_first_drug <- dft_hdrug_ind_first_day %>%
+  # This drops the excluded drugs from link_drugs_indications.R
+  filter(agent %in% dft_hdrug_ind$agent) %>%
   group_by(cohort, agent) %>%
   summarize(
     n_uses = n(),

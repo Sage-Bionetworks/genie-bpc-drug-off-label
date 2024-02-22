@@ -40,6 +40,15 @@ set_flextable_defaults(
 )
 
 
+dt_wrapper <- function(x) {
+  DT::datatable(
+    x,
+    style = "bootstrap4",
+    fillContainer = F
+  )
+}
+    
+
 ```
 
 
@@ -196,7 +205,7 @@ For convenience, the following table supports simple text searching (not case se
 Each row shows the number of regimens with those drugs we have in the data (`n_regimens`) and the number of people who had at least one regimen with those exact drugs (`n_people`).
 
 ```{r print_reg_table, show = T, include = T}
-DT::datatable(dfp_reg_sum, options = list(DisplayLength = 25))
+dt_wrapper(dfp_reg_sum)
 ```
 
 
@@ -229,7 +238,7 @@ See the **attached CSV** (drug_use_counts_by_cohort.csv) for the full list of dr
 
 
 ```{r print_drug_table, show = T, include = T}
-DT::datatable(dfp_drug_sum, options = list(DisplayLength = 25))
+dt_wrapper(dfp_drug_sum)
 ```
 
 
@@ -277,7 +286,7 @@ Drugs which constitute the first recorded start date for each participant.  `n_u
 BPC regimen encoding does not factor into this table at all - we're examining drugs as separate entities and only looking at the time they were started.
 
 ```{r, print_first_drug_sum, include = T}
-DT::datatable(dfp_first_drug_sum, options = list(DisplayLength = 25))
+dt_wrapper(dfp_first_drug_sum)
 ```
 
 ### *R1.3b Drugs used within 30 days of first
@@ -285,7 +294,7 @@ DT::datatable(dfp_first_drug_sum, options = list(DisplayLength = 25))
 Drugs used within 30 days of the first drug use.  Similar to the previous table but allowing a 30 day window for the second drug start time.
 
 ```{r, print_first_30d_drug_sum, include = T}
-DT::datatable(dfp_first_30d_drug_sum, options = list(DisplayLength = 25))
+dt_wrapper(dfp_first_30d_drug_sum)
 ```
 
 
@@ -414,7 +423,7 @@ As with the previous plots, if a second drug was started on the same day as the 
 
 
 ```{r, include = T}
-DT::datatable(dfp_first_drug_met_sum, options = list(DisplayLength = 25))
+dt_wrapper(dfp_first_drug_met_sum)
 ```
 
 Note:  This list has about 70% as many rows (combinations of cohort and agent) as the one for all participants in this cohort.
@@ -571,6 +580,7 @@ To generate a list of potential approvals we will join two datasets:
 
 - Jeremy Warner's indications sheet, which lists about 3000 rows of approvals over several regulatory agencies.
 - The regimen BPC data, reshaped to be one row per drug rather than one row per regimen.  Filtering described in chapter 1 generally applies.
+  - Additionally, we excluded **any drug approved before 1997** as those labels tend to be discordant with practice. 
 
 The concepts we are joining on are:
 
@@ -596,7 +606,7 @@ Reminder: `agent` is directly pulled GENIE BPC's `regimen_drugs` after splitting
 ```{r, include = T}
 dft_cw_drug %>%
   select(component, agent, agent_map_type) %>%
-  DT::datatable(.)
+  dt_wrapper(.)
 ```
 
 Notes:
@@ -707,7 +717,7 @@ The following table shows potential **Off-label** uses, which is just any use wh
 
 ```{r, include = T}
 dft_off_label_uses %>%
-  DT::datatable(.)
+  dt_wrapper(.)
 ```
 
 ### *R3.2 Off label use, first drug
@@ -717,7 +727,7 @@ The following table is the same as the previous one, except we limit to only the
  
 ```{r, include = T}
 dft_off_label_uses_first_drug %>%
-  DT::datatable(.)
+  dt_wrapper(.)
 ```
  
 
@@ -735,7 +745,7 @@ The following table shows a few relevant columns from the `indications.csv` shee
 ```{r, include = T}
 dft_ind_mapped %>% 
   select(component, regulator, date, condition, note, context, stage_or_status) %>%
-  DT::datatable(.)
+  dt_wrapper(.)
 ```
 
 
@@ -759,7 +769,7 @@ dft_ind_mapped %>%
   filter(!(condition %in% dft_cw_condition$condition)) %>%
   arrange(condition) %>%
   rename(n_rows = n) %>%
-  DT::datatable(.)
+  dt_wrapper(.)
 ```
 
 Notes:

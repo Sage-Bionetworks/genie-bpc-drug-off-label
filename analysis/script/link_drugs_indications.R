@@ -33,25 +33,50 @@ dft_poss_app <- make_possible_indication_cohort(
 )
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
-dft_poss_app <- add_checks_hdrug_ind_join(dft_poss_app)
+dft_poss_app <- add_checks_hdrug_ind_join(dat_poss_app = dft_poss_app)
 
 readr::write_rds(
   dft_poss_app
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
 
+
+check_tests_cols_true_false <- function(
+    dat
+) {
+  dat %>%
+    select(matches("^test_")) %>%
+    summarize(
+      across(
+        .cols = everything(),
+        .fns = \(x) all(x %in% c(T,F))
+      )
+    ) %>%
+    pivot_longer(
+      cols = everything()
+    ) %>%
+    pull(value) %>%
+    all(.)
+}
+      
+
+
+
 summarize_possible_approvals <- function(
-    dft_poss_app
+    dft_poss_app,
+    group_cols = c('cohort', 'record_id', 'ca_seq', 'regimen_number',
+                   'drug_number', 'agent')
 ) {
   
+  
+  rtn <- dft_poss_app %>%
+    group_by(all_of(group_cols)) %>%
+    summarize(
+      
+      .groups = "drop"
+    )
+  
 }
-
-
-
-# readr::write_rds(
-#   possible_approvals,
-#   here('data', 'linked_approvals', 'possible_approvals.rds')
-# )
 
 
 # readr::write_rds(

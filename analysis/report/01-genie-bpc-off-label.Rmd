@@ -714,13 +714,36 @@ dft_off_label_uses %>%
   dt_wrapper(.)
 ```
 
+Notes:
+
+- There are some obvious problems here - see the table below for more info on *how* some of these are declared off label.
+
+
+
+
+```{r}
+dft_off_label_reasons <- dft_hdrug_det %>% 
+  count(cohort, agent, failure_type_f) %>%
+  filter(!is.na(failure_type_f)) %>%
+  group_by(failure_type_f) %>%
+  arrange(desc(n)) %>%
+  slice(1:5) %>%
+  ungroup(.)
+
+```
 
 ### *R3.1b Off-label reasons
 
-We now have multiple reasons that a drug could be used off
+The following table shows the top 5 off label uses for our two ways a use can be declared off label:
 
-```{r}
-
+```{r, include = T}
+dft_off_label_reasons %>%
+  select(reason = failure_type_f, everything()) %>%
+  flextable(.) %>%
+  merge_v(j = 1) %>% 
+  valign(j = 1, valign =  'top') %>%
+  autofit(.) %>%
+  fix_border_issues(.)
 ```
 
 
@@ -731,8 +754,7 @@ We now have multiple reasons that a drug could be used off
 
 ### *R3.2 Off label use, first drug
 
-The following table is the same as the previous one, except we limit to only the 
- first day of drug use by each person:
+The following table is the same as the previous one, except we limit to only the first day of drug use by each person:
  
 ```{r, include = T}
 dft_off_label_uses_first_drug %>%
@@ -743,6 +765,8 @@ dft_off_label_uses_first_drug %>%
   dt_wrapper(.)
 ```
  
+
+
 
 
 

@@ -43,6 +43,21 @@ readr::write_rds(
 
 dft_hdrug_determinations <- summarize_possible_approvals(dft_poss_app) 
 
+levs_failure_type <- c(
+  "No indications found",
+  "Not metastatic at use"
+)
+
+dft_hdrug_determinations %<>%
+  mutate(
+    failure_type_f = case_when(
+      failure_type %in% "test_ind_exists" ~ levs_failure_type[1],
+      failure_type %in% "test_met" ~ levs_failure_type[2],
+      T ~ NA_character_
+    ),
+    failure_type_f = factor(failure_type_f, levels = levs_failure_type)
+  )
+
 readr::write_rds(
   dft_hdrug_determinations,
   here('data', 'linked_approvals', 'hdrug_determinations.rds')

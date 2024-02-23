@@ -58,7 +58,7 @@ This is a working document for analyses related to the Off-label & Off-guideline
 
 The regimen/drug data is filtered in all tables to **exclude Investigational Drugs**.
 
-### *Cohort filters
+### Cohort filters
 
 Filtering of the raw BPC data we will apply to all items except for R1.1:
 
@@ -632,6 +632,7 @@ vec_bpc_drugs <- dft_hdrug_det %>%
   unique
 
 vec_ind_drugs <- dft_ind_mapped %>%
+  filter(mapped_agent %in% vec_bpc_drugs) %>%
   pull(mapped_agent) %>%
   unique
 
@@ -801,7 +802,7 @@ gg_smooth <- ggplot(
     labels = paste0(seq(0, 100, by = 5), "%"),
     expand = c(0,0)
   ) + 
-  labs(title = "Proportion of subjects with any off label use") + 
+  labs(title = "Proportion of subjects with any off label use (penalized spline)") + 
   theme_bw() + 
   theme(
     axis.title = element_markdown(angle = 0)
@@ -870,7 +871,7 @@ From Nov 21, 2023:
 2. Confirm that there are no missing drug start times.  **Confirmed, no missing drug start times.  Other info:  About 4% of drugs have a missing `dx_drug_end_int` and vanishingly few (<0.01%) have a missing `dx_drug_end_or_lastadm_int`**
 
 
-### *Unused conditions
+### Unused conditions
 
 The Warner `indications.csv` sheet contains many conditions which didn't seem to map to any BPC cohort are:
 

@@ -20,73 +20,44 @@ dft_cohort_cases <- readr::read_rds(
   here('data', 'cohort', 'clin_dat_wide.rds')
 )
 
-dft_hdrug_cohort <- dft_cohort_cases %>%
+
+
+dft_hdrug_cohort_lim <- dft_cohort_cases %>%
   select(cohort, hdrug) %>%
-  unnest(hdrug)
-
-
-
-# Remove drugs which we suspect have inadequate approval documentation.
-dft_hdrug_cohort %<>%
+  unnest(hdrug) %>%
   filter(!(agent %in% vec_excl_drugs))
-  
 
-
-
-
-
-# Create a full list of "possible" approvals.
-possible_approvals <- left_join(
-  (dft_hdrug_cohort %>% 
-     select(cohort, record_id, ca_seq, regimen_number, drug_number, agent)
-  ),
-  (dft_ind_lim %>%
-     select(
-       cohort = mapped_cohort,
-       agent = mapped_agent,
-       date,
-       context, 
-       stage_or_status,
-       condition,
-       agent_map_type
-     ) %>%
-     mutate(approval_exists = T)
-  ),
-  by = c('cohort', 'agent'),
-  relationship = "many-to-many"
+dft_poss_app <- make_possible_indication_cohort( 
+  dat_hdrug = dft_hdrug_cohort_lim,
+  dat_ind = dft_ind_lim
 )
+# Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
-possible_approvals %<>% 
-  mutate(
-    approval_exists = if_else(
-      is.na(approval_exists), 
-      F, 
-      approval_exists
-    )
-  )
+dft_poss_app <- add_checks_hdrug_ind_join(dft_poss_app)
 
 readr::write_rds(
-  possible_approvals,
+  dft_poss_app
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
 
+summarize_possible_approvals <- function(
+    dft_poss_app
+) {
+  
+}
 
-dft_hdrug_app <- possible_approvals %>%
-  # This is excessive to get uniqueness - I just want the drug and cohort for
-  #   the sake of documentation.
-  group_by(
-    cohort, record_id, ca_seq, regimen_number, drug_number, agent
-  ) %>%
-  summarize(
-    # renaming here because I didn't like "approval"
-    ind_exists = sum(approval_exists, na.rm = T) >= 1,
-    .groups = "drop"
-  )
 
-readr::write_rds(
-  dft_hdrug_app,
-  here('data', 'linked_approvals', 'hdrug_ind.rds')
-)
+
+# readr::write_rds(
+#   possible_approvals,
+#   here('data', 'linked_approvals', 'possible_approvals.rds')
+# )
+
+
+# readr::write_rds(
+#   dft_hdrug_app,
+#   here('data', 'linked_approvals', 'hdrug_ind.rds')
+# )
 
 
 

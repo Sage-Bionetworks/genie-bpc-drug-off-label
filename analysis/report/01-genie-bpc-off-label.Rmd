@@ -768,9 +768,76 @@ dft_off_label_uses_first_drug %>%
 
 
 
+```{r}
+dft_reg_num_off_label <- dft_hdrug_det %>%
+  group_by(record_id, regimen_number) %>%
+  summarize(
+    any_off_label = as.numeric(any(ind_exists %in% F)),
+    .groups = "drop"
+  )
+  # ) %>%
+  # group_by(regimen_number) %>%
+  # summarize(
+  #   n_off = sum(any_off_label),
+  #   n_total = n(),
+  #   .groups = "drop"
+  # ) %>%
+  # mutate(
+  #   prop_off_label = n_off / n_total
+  # )
+
+gg_smooth <- ggplot(
+  dft_reg_num_off_label,
+  aes(y = any_off_label, x = regimen_number)
+) + 
+  geom_smooth(color = "#3e5622", fill = "#95A683") +
+  scale_x_continuous(
+    breaks = seq(1, 101, by = 10),
+    name = "BPC Regimen number"
+  ) +
+  scale_y_continuous(
+    name = "Proportion",
+    breaks = seq(0, 100, by = 5) / 100,
+    labels = paste0(seq(0, 100, by = 5), "%"),
+    expand = c(0,0)
+  ) + 
+  labs(title = "Proportion of subjects with any off label use") + 
+  theme_bw() + 
+  theme(
+    axis.title = element_markdown(angle = 0)
+  )
+gg_data_density <- ggplot(
+    dft_reg_num_off_label,
+    aes(x = regimen_number)
+) + 
+  geom_histogram(binwidth = 1, fill = "#83781B") +
+  scale_x_continuous(
+    breaks = seq(1, 101, by = 10),
+    name = "BPC Regimen number"
+  ) +
+  scale_y_continuous(
+    name = "Obs count",
+  ) + 
+  theme_bw()
+
+gg_comb <- cowplot::plot_grid(
+  gg_smooth,
+  gg_data_density,
+  ncol = 1,
+  rel_heights = c(70,30)
+)
+  
+gg_comb
+
+```
 
 
+### R3.3 Regimen number & prop off label
 
+
+```{r, include = T}
+gg_comb
+```
 
 
 
@@ -781,7 +848,8 @@ The following table shows a few relevant columns from the `indications.csv` shee
 
 ```{r, include = T}
 dft_ind_mapped %>% 
-  select(component, regulator, date, condition, note, context, stage_or_status) %>%
+  select(component, regulator, date, condition, note, 
+         context, stage_or_status) %>%
   dt_wrapper(.)
 ```
 
@@ -821,4 +889,5 @@ Notes:
 
 ## Upcoming work
 
-- Expand to checking for metastatic and date of approval.
+- Expand to checking for date of approval.
+- Remove breast sarcomas (about 15 cases in cohort if I recall).

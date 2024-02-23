@@ -1,7 +1,7 @@
 check_test_cols_true_false <- function(
     dat
 ) {
-  dat %>%
+  test_result <- dat %>%
     select(matches("^test_")) %>%
     summarize(
       across(
@@ -14,5 +14,8 @@ check_test_cols_true_false <- function(
     ) %>%
     pull(value) %>%
     all(.)
+  
+  if (!test_result) {
+    cli_abort("^test_ columns contain values other than T/F.")
+  }
 }
-i

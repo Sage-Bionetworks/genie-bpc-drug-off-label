@@ -5,7 +5,7 @@ summarize_possible_approvals <- function(
     group_cols = c('cohort', 'record_id', 'ca_seq', 'regimen_number',
                    'drug_number', 'agent')
 ) {
-  check_tests_cols_true_false(dat_poss_app)
+  check_test_cols_true_false(dat_poss_app)
   
   rtn <- dat_poss_app %>%
     group_by(across(all_of(group_cols))) %>%

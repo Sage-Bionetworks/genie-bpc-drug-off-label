@@ -129,8 +129,8 @@ dft_ind_mapped <- readr::read_rds(
 
 
 ```{r}
-dft_hdrug_ind <- readr::read_rds(
-  here('data', 'linked_approvals', 'hdrug_ind.rds')
+dft_hdrug_det <- readr::read_rds(
+  here('data', 'linked_approvals', 'hdrug_determinations.rds')
 )
 ```
 
@@ -627,7 +627,7 @@ Notes:
 
 
 ```{r}
-vec_bpc_drugs <- dft_hdrug_ind %>%
+vec_bpc_drugs <- dft_hdrug_det %>%
   pull(agent) %>%
   unique
 
@@ -635,7 +635,7 @@ vec_ind_drugs <- dft_ind_mapped %>%
   pull(mapped_agent) %>%
   unique
 
-prop_uses_covered <- dft_hdrug_ind %>%
+prop_uses_covered <- dft_hdrug_det %>%
   mutate(
     drug_in_ind = agent %in% vec_ind_drugs
   ) %>% 
@@ -655,12 +655,12 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 
 - Of the `r length(vec_bpc_drugs)` unique drugs in our BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
   - The agents which we couldn't map to anything in the indications sheet are: `r vec_bpc_drugs_not_mapped`.  All used very few times in BPC.
-- Of the `r nrow(dft_hdrug_ind)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
+- Of the `r nrow(dft_hdrug_det)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
 
 
 
 ```{r}
-dft_off_label_uses <- dft_hdrug_ind %>%
+dft_off_label_uses <- dft_hdrug_det %>%
   group_by(cohort, agent) %>%
   summarize(
     n_uses = n(),
@@ -672,7 +672,7 @@ dft_off_label_uses <- dft_hdrug_ind %>%
   select(-c(n_indicated, prop_indicated))
 
 
-dft_hdrug_ind_first_day <- dft_hdrug_fxd %>%
+dft_hdrug_det_first_day <- dft_hdrug_fxd %>%
   filter_drugs_first_x_days(
     ., 
     x = 0, # within 0 days to start.
@@ -681,13 +681,11 @@ dft_hdrug_ind_first_day <- dft_hdrug_fxd %>%
   select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
   left_join(
     .,
-    dft_hdrug_ind,
+    dft_hdrug_det,
     by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
   )
     
-dft_off_label_uses_first_drug <- dft_hdrug_ind_first_day %>%
-  # This drops the excluded drugs from link_drugs_indications.R
-  filter(agent %in% dft_hdrug_ind$agent) %>%
+dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
   group_by(cohort, agent) %>%
   summarize(
     n_uses = n(),

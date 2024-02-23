@@ -661,14 +661,8 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 
 ```{r}
 dft_off_label_uses <- dft_hdrug_det %>%
-  group_by(cohort, agent) %>%
-  summarize(
-    n_uses = n(),
-    n_on_label = sum(ind_exists, na.rm = T),
-    n_off_label = n_uses - n_on_label,
-    prop_off_label = n_off_label / n_uses, # currently 0 or 1.
-    .groups = "drop"
-  )
+  count_off_label(.) %>%
+  filter(n_off_label > 0)
 
 dft_hdrug_det_first_day <- dft_hdrug_fxd %>%
   filter_drugs_first_x_days(
@@ -686,15 +680,8 @@ dft_hdrug_det_first_day <- dft_hdrug_fxd %>%
 dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
   # This drops the excluded drugs from link_drugs_indications.R
   filter(agent %in% dft_hdrug_det$agent) %>%
-  group_by(cohort, agent) %>%
-  summarize(
-    n_uses = n(),
-    n_indicated = sum(ind_exists, na.rm = T),
-    prop_indicated = n_indicated / n_uses, # currently 0 or 1.
-    .groups = "drop"
-  ) %>%
-  filter(prop_indicated %in% 0) %>%
-  select(-c(n_indicated, prop_indicated))
+  count_off_label(.) %>%
+  filter(n_off_label > 0)
 
 ```
   
@@ -702,26 +689,42 @@ dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
 
 Our definition of an on-label use is currently any use of a drug which has a matching row in the indications sheet that meets the following criteria:
 
-- Regulator for the approval is FDA.
-- Condition maps to the BPC cohort of the drug use.
-- Component maps to the BPC agent (regimen drug) of the drug use.
-- If the drug requires metastatic patient, the drug use started after a metastatic diagnosis.
+1. A matching indication exists, meaning:
+
+  - Regulator for the approval is FDA.
+  - Condition maps to the BPC cohort of the drug use.
+  - Component maps to the BPC agent (regimen drug) of the drug use.
+  
+2. If the indication a requires metastatic state, the drug use started after a metastatic diagnosis.
 
 Planned expansions to this definition include:
 
 - The drug is started after the approval date.
+- Additional indications for non-cohort things like TMB for pembro.
 
 The following table shows potential **Off-label** uses, which is just any use which doesn't meet the definition above.  For each {cohort, agent} combination we show the number of off-label uses:
 
 
-
 ```{r, include = T}
 dft_off_label_uses %>%
+  mutate(
+    pct_off_label = round(prop_off_label * 100)
+  ) %>%
+  select(cohort, agent, n_off_label, pct_off_label) %>%
   dt_wrapper(.)
 ```
 
 
-### *R3.1b 
+### *R3.1b Off-label reasons
+
+We now have multiple reasons that a drug could be used off
+
+```{r}
+
+```
+
+
+
 
 
 
@@ -733,6 +736,10 @@ The following table is the same as the previous one, except we limit to only the
  
 ```{r, include = T}
 dft_off_label_uses_first_drug %>%
+  mutate(
+    pct_off_label = round(prop_off_label * 100)
+  ) %>%
+  select(cohort, agent, n_off_label, pct_off_label) %>%
   dt_wrapper(.)
 ```
  
@@ -746,7 +753,7 @@ dft_off_label_uses_first_drug %>%
 
 ## Indications sheet
 
-The following table shows a few relevant columns from the `indications.csv` sheet.  This is not filtered, so it contains approvals from other regulators.
+The following table shows a few relevant columns from the `indications.csv` sheet.  This is not filtered, so it contains approvals from other regulators and drugs we've excluded from our analysis.
 
 ```{r, include = T}
 dft_ind_mapped %>% 

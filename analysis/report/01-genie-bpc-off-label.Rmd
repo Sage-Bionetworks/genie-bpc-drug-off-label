@@ -230,7 +230,7 @@ dfp_drug_sum %>%
   )
 ```
 
-### *R1.2b Drugs used (as drugs)
+### R1.2b Drugs used (as drugs)
 
 The following content is the same information as the previous table, counted as separate drugs (agents) rather than using the BPC regimen rules.  Each row shows the number of regimens which used that drug in the data (`n_uses`) and the number of people who had at least one regimen using this agent (`n_people`).
 
@@ -279,7 +279,7 @@ dfp_first_30d_drug_sum <- dft_hdrug_fxd %>%
 ```
 
 
-### *R1.3a First drugs used
+### R1.3a First drugs used
 
 Drugs which constitute the first recorded start date for each participant.  `n_uses` and `n_people` should be identical here, so we just state the latter.  If two drugs are started at the same time, both would appear in this table.
 
@@ -289,7 +289,7 @@ BPC regimen encoding does not factor into this table at all - we're examining dr
 dt_wrapper(dfp_first_drug_sum)
 ```
 
-### *R1.3b Drugs used within 30 days of first
+### R1.3b Drugs used within 30 days of first
 
 Drugs used within 30 days of the first drug use.  Similar to the previous table but allowing a 30 day window for the second drug start time.
 
@@ -328,7 +328,7 @@ gg_sec_drug_t_400 <- plot_time_dist_violin_ecdf(
 ```
 
 
-### *R1.3c Second drug start interval distribution
+### R1.3c Second drug start interval distribution
 
 The quantity being displayed here is the time from the start of the first drug to the start of the second drug in days (excluding those started on the same day as the first drug).  
 
@@ -832,12 +832,19 @@ gg_comb
 ```
 
 
-### R3.3 Regimen number & prop off label
+### *R3.3 Later = more off label
+
+We observed previous that first drugs seem to be on label more frequently and hypothesized that later regimens may have more off label use.  The following graph is a rough expansion on that idea:
 
 
 ```{r, include = T}
 gg_comb
 ```
+
+Notes:
+
+- Generally it appears that off label use increases in later regimens.
+- We can fix this up to use time rather than regimen number for our reader's ease.  This display was primarily chosen because it was easy to make.
 
 
 
@@ -855,7 +862,7 @@ dft_ind_mapped %>%
 
 
 
-## *Issues/concerns
+## Issues/concerns
 
 From Nov 21, 2023:
 

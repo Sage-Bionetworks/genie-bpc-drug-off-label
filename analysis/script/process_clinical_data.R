@@ -99,7 +99,6 @@ dft_clin_dat_wide %<>%
     )
   )
 
-
 # Fix the breast-type deviances in regimen data:
 dft_clin_dat_wide %<>%
   mutate(
@@ -359,7 +358,7 @@ dft_clin_dat_wide %<>%
       .y = ca_ind,
       # Function: Merge the met time in, check if it's after drug start or not.
       .f = \(dat_drug, dat_ca_ind) {
-        met_df <- get_dmet_timing(dat_ca_ind) 
+        met_df <- get_dmet_time(dat_ca_ind) 
         
         rtn <- left_join(
           dat_drug,
@@ -371,9 +370,9 @@ dft_clin_dat_wide %<>%
         rtn %<>%
           mutate(
             dmet_at_drug_start = case_when(
-              is.na(dx_met_int) ~ F,
+              is.na(dx_dmet_yrs) ~ F,
               is.na(dx_drug_start_int) ~ F, # never happens
-              dx_drug_start_int < dx_met_int ~ F,
+              dx_drug_start_int < dx_dmet_yrs ~ F,
               T ~ T
             )
           )
@@ -382,8 +381,6 @@ dft_clin_dat_wide %<>%
       }
     )
   )
-
-
 
 ###############
 # Output data #

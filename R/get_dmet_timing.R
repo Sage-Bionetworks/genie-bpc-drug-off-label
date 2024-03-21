@@ -2,6 +2,7 @@
 #' @title Get the timing of distant metastases
 #'
 #' @param ca_ind_df The cancer index PRISSMM dataset.
+
 get_dmet_timing <- function(ca_ind_df) {
   stage_iv_df <- ca_ind_df %>%
     filter(stage_dx_iv %in% "Stage IV") %>%

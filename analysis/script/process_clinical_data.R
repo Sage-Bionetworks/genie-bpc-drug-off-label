@@ -230,9 +230,6 @@ dft_clin_dat_wide %<>%
     )
   )
 
-# 
-# dft_clin_dat_wide %>% slice(5) %>% pull(hreg) %>% `[[`(.,1) %>% remove_clinical_trial_regimens(.)
-
 
 
 # Create a drug-keyed dataset:

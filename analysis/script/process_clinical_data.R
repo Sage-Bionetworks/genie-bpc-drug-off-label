@@ -221,6 +221,18 @@ dft_clin_dat_wide %<>%
     )
   )
 
+# Remove any investigational drug regimens from the dataset.
+dft_clin_dat_wide %<>%
+  mutate(
+    hreg = purrr::map(
+      .x = hreg,
+      .f = remove_clinical_trial_regimens
+    )
+  )
+
+# 
+# dft_clin_dat_wide %>% slice(5) %>% pull(hreg) %>% `[[`(.,1) %>% remove_clinical_trial_regimens(.)
+
 
 
 # Create a drug-keyed dataset:
@@ -341,8 +353,6 @@ dft_clin_dat_wide %<>%
     )
   )
 
-# Now it's expected that pt and ca_seq have exactly the same number of rows:
-# dft_clin_dat_wide %>% select(ca_ind, pt)
 
 
 

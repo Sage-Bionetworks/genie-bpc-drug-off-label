@@ -90,6 +90,15 @@ dft_clin_dat_wide <- dft_clin_dat %>%
 #   group_by(cohort) %>%
 #   slice(1:5)
 
+# Later on we will need a range of possible values for birth date.  Just add now.
+dft_clin_dat_wide %<>%
+  mutate(
+    pt = purrr::map(
+      .x = pt,
+      .f = add_birth_date_range
+    )
+  )
+
 # Remove drugs with a non-standard administration route (decided Nov 21, 2023)
 dft_clin_dat_wide %<>%
   mutate(
@@ -358,7 +367,6 @@ dft_clin_dat_wide %<>%
 # Add information for whether the participant was metastatic at the time of
 #   starting each agent.
 dft_clin_dat_wide %<>%
-  # for the patient column we'll just limit to those which are in the ca_ind column:
   mutate(
     hdrug = purrr::map2(
       .x = hdrug,
@@ -388,6 +396,21 @@ dft_clin_dat_wide %<>%
       }
     )
   )
+
+
+# Add variables for the range of days the drug use could have been on.
+dft_clin_dat_wide %<>%
+  mutate(
+    hdrug = purrr::map2(
+      .x = pt,
+      .y = hdrug,
+      # Function: Merge the met time in, check if it's after drug start or not.
+      .f = add_drug_start_range
+    )
+  )
+
+
+
 
 ###############
 # Output data #

@@ -773,7 +773,7 @@ dft_off_label_uses_first_drug %>%
 dft_reg_num_off_label <- dft_hdrug_det %>%
   group_by(record_id, regimen_number) %>%
   summarize(
-    any_off_label = as.numeric(any(ind_exists %in% F)),
+    any_off_label = as.numeric(any(valid_ind_exists %in% F)),
     .groups = "drop"
   )
   # ) %>%

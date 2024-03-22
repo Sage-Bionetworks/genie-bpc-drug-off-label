@@ -15,6 +15,18 @@ add_checks_possible_approvals <- function(
       )
     )
   
+  dat_poss_app %<>%
+    mutate(
+      test_date_definite = case_when(
+        drug_start_date_max < ind_date ~ F,
+        T ~ T
+      ),
+      test_date_possible = case_when(
+        drug_start_date_min < ind_date ~ F,
+        T ~ T
+      )
+    )
+  
   # Add an "all" test.
   if (is.null(test_cols_to_include)) {
     test_cols_to_include <- names(dat_poss_app)[

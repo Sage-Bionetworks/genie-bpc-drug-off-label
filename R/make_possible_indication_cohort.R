@@ -7,13 +7,16 @@ make_possible_indication_cohort <- function(
   dat_hdrug %<>% 
     select(
       cohort, record_id, ca_seq, regimen_number, drug_number, agent,
-      dmet_at_drug_start
+      dmet_at_drug_start, 
+      drug_start_date_min, drug_start_date_max
     )
+  
   dat_ind %<>%
     select(
       cohort = mapped_cohort,
       agent = mapped_agent,
-      stage_or_status
+      stage_or_status,
+      ind_date = date
     ) %>%
     mutate(test_ind_exists = T)
   

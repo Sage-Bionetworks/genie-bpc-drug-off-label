@@ -21,6 +21,18 @@ dft_cohort_cases <- readr::read_rds(
 )
 
 
+# Fix up the date column from the indications sheet:
+dft_ind_lim %<>% 
+  mutate(
+    date = case_when(
+      # If the date is uncertain we just assume it was always approved.
+      # This has the effect of never flagging someone as taking these too early.
+      date %in% "Uncertain date" ~ ymd(rep('1900-01-01', times = n())),
+      T ~ suppressWarnings(ymd(date))
+    )
+  )
+
+
 
 dft_hdrug_cohort_lim <- dft_cohort_cases %>%
   select(cohort, hdrug) %>%
@@ -33,7 +45,15 @@ dft_poss_app <- make_possible_indication_cohort(
 )
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
-dft_poss_app <- add_checks_possible_approvals(dat_poss_app = dft_poss_app)
+dft_poss_app <- add_checks_possible_approvals(
+  dat_poss_app = dft_poss_app,
+  test_cols_to_include = c(
+    'test_ind_exists',
+    'test_met',
+    'test_date_definite'
+    # excluded:  'test_date_possible'
+  )
+)
 
 readr::write_rds(
   dft_poss_app,
@@ -45,7 +65,8 @@ dft_hdrug_determinations <- summarize_possible_approvals(dft_poss_app)
 
 levs_failure_type <- c(
   "No indications found",
-  "Not metastatic at use"
+  "Not metastatic at use",
+  "Started before approval"
 )
 
 dft_hdrug_determinations %<>%
@@ -53,6 +74,7 @@ dft_hdrug_determinations %<>%
     failure_type_f = case_when(
       failure_type %in% "test_ind_exists" ~ levs_failure_type[1],
       failure_type %in% "test_met" ~ levs_failure_type[2],
+      failure_type %in% "test_date_definite" ~ levs_failure_type[3],
       T ~ NA_character_
     ),
     failure_type_f = factor(failure_type_f, levels = levs_failure_type)

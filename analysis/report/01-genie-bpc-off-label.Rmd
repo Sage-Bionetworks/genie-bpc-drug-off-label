@@ -574,7 +574,7 @@ dft_over_ex$plt_drug_case[[6]]
 
 ## *Ch 3 - Joining to indications
 
-### *Strategy
+### *R3.0 Linkage Strategy
 
 To generate a list of potential approvals we will join two datasets:
 
@@ -585,7 +585,7 @@ To generate a list of potential approvals we will join two datasets:
 The concepts we are joining on are:
 
 - Warner's `condition` is mapped to BPC `cohort`.
-- Warner's `component` is mapped to BPC `agent`.  This is drug names from the `regimen_drugs` column.
+- Warner's `component` is mapped to BPC `agent`.  `agent` is a reshape of drug names from the `regimen_drugs` column.
 
 Obviously the text representations of these two concepts are slightly different, so we need some crosswalks to link them.  
 
@@ -615,14 +615,7 @@ Notes:
   - `exact`: The strings were a perfect (case-ignoring) match.
   - `trimmed`:  After trimming common suffixes from the BPC data (like "sulfate", "acetate") the strings were a perfect match.
   - `manual`:  Manual link, by someone with no medical or pharmacology training (!).
-- Mappings worthy of extra scrutiny:
-  - components with interferons were changed to simply "Interferon" to match BPC.
-  - Paclitaxel nanoparticle albumin-bound -> Nabpaclitaxel.  (Verified correct in meeting).
-  - Trastuzumab is complex in the indications sheet.
   
-
-
-
 
 
 
@@ -686,7 +679,7 @@ dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
 
 ```
   
-### *R3.1a Off label uses
+### R3.1 Off label use definition
 
 Our definition of an on-label use is currently any use of a drug which has a matching row in the indications sheet that meets the following criteria:
 
@@ -698,12 +691,111 @@ Our definition of an on-label use is currently any use of a drug which has a mat
   
 2. If the indication a requires metastatic state, the drug use started after a metastatic diagnosis.
 
+3. The drug start date is after the approval date for the drug.  Notes:
+
+  - We do not have exact dates in GENIE BPC.  We calculate the maximum drug start date given a participant's `birth_year` (whole years) and the interval from birth date to start of the drug (an exact number of days) by assuming they were born on Dec 31.
+  - Assuming people were born as late as possible is conservative in that we consider the fewest number possible off-label by date.
+  - A later section will deal with the opposite assumption (taking the minimum possible drug start date).
+
 Planned expansions to this definition include:
 
-- The drug is started after the approval date.
-- Additional indications for non-cohort things like TMB for pembro.
+- Additional indications for non-cohort things like TMB for pembrolizumab.
 
-The following table shows potential **Off-label** uses, which is just any use which doesn't meet the definition above.  For each {cohort, agent} combination we show the number of off-label uses:
+**Off-label** use is a drug use which can't be verified as on-label according to the definition above under any indication in our sheet.
+
+Each off label use is assigned a single "reason" it's off label, which means we have a priority system.  The following order is used:
+
+- **No indications found** - There was no cancer type indication at all for this drug use.
+- **Not metastatic at use** - The applicable drug indication required metastases at use and the participant did not have distant mets recorded when the drug was started.
+- **Started before approval** - The drug was started before the approval date.
+
+For example, if a participant uses a drug in 2015 while not metastatic, and the drug required metastases with it's only approval in 2017, that will count as "Not metastatic at use" (higher priority).  These can be shifted around, except for "no indication found".
+
+
+
+```{r}
+
+# Just a rename:
+dft_hdrug_det %<>% 
+  mutate(off_label_type = failure_type_f)
+
+simple_olu_disp_help <- function(
+    dat_olu
+) {
+  dat_olu %>%
+    mutate(off_label_uses = n_pct_str(n_off_label, n_uses, show_d = T)) %>%
+    select(-c(n_uses, n_on_label, n_off_label, prop_off_label)) %>%
+    flextable(.) %>%
+    autofit(.)
+}
+
+dfp_olu_cohort <- dft_hdrug_det %>%
+  count_off_label(group_vars = c('cohort')) %>%
+  simple_olu_disp_help(.)
+
+dfp_olu_type <- dft_hdrug_det %>%
+  filter(!valid_ind_exists) %>%
+  count(off_label_type) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+### R3.2 Off label use overview
+
+By cohort:
+
+```{r, include = T}
+dfp_olu_cohort
+```
+
+By reason (see notes on prioritization above):
+
+```{r, include = T}
+dfp_olu_type
+```
+
+
+```{r}
+simple_olu_disp_help <- function(
+    dat_olu
+) {
+  dat_olu %>%
+    mutate(off_label_uses = n_pct_str(n_off_label, n_uses, show_d = T)) %>%
+    select(-c(n_uses, n_on_label, n_off_label, prop_off_label)) %>%
+    flextable(.) %>%
+    autofit(.)
+}
+
+dft_hdrug_det %>%
+  count_off_label(group_vars = c('cohort')) %>%
+  simple_olu_disp_help(.)
+
+dft_hdrug_det %>%
+  filter(!valid_ind_exists) %>%
+  count(failure_type_f)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r, include = T}

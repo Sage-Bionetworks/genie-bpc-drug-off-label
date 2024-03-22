@@ -719,30 +719,47 @@ For example, if a participant uses a drug in 2015 while not metastatic, and the 
 dft_hdrug_det %<>% 
   mutate(off_label_type = failure_type_f)
 
-simple_olu_disp_help <- function(
-    dat_olu
-) {
-  dat_olu %>%
-    mutate(off_label_uses = n_pct_str(n_off_label, n_uses, show_d = T)) %>%
-    select(-c(n_uses, n_on_label, n_off_label, prop_off_label)) %>%
-    flextable(.) %>%
-    autofit(.)
-}
-
 dfp_olu_cohort <- dft_hdrug_det %>%
   count_off_label(group_vars = c('cohort')) %>%
-  simple_olu_disp_help(.)
+  mutate(
+    off_label_uses = n_pct_str(n_off_label, n_uses, show_d = T)
+  ) %>%
+  select(-c(n_uses, n_on_label, n_off_label, prop_off_label)) %>%
+  flextable(.) %>%
+  autofit(.)
 
 dfp_olu_type <- dft_hdrug_det %>%
   filter(!valid_ind_exists) %>%
   count(off_label_type) %>%
   flextable(.) %>%
   autofit(.)
+
+dfp_olu_cohort_type <- dft_hdrug_det %>%
+  count(off_label_type, cohort) %>%
+  complete(
+    data = .,
+    off_label_type, cohort,
+    fill = list(n = 0)
+  ) %>%
+  pivot_wider(
+    names_from = cohort,
+    values_from = n
+  ) %>%
+  mutate(
+    off_label_type = replace_na(
+      as.character(off_label_type), 
+      "(on label)"
+    )
+  ) %>%
+  flextable(.) %>%
+  autofit(.) %>%
+  flextable::color(i = 4, color = "gray50")
+  
 ```
 
 ### R3.2 Off label use overview
 
-By cohort:
+By cohort (denominators show the number of total drug uses included):
 
 ```{r, include = T}
 dfp_olu_cohort
@@ -753,6 +770,17 @@ By reason (see notes on prioritization above):
 ```{r, include = T}
 dfp_olu_type
 ```
+
+Crosstabulation between those two.  The bottom row shows the number of on-label uses.
+
+```{r, include = T}
+dfp_olu_cohort_type
+```
+
+
+
+
+
 
 
 ```{r}

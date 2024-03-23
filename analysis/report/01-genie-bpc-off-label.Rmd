@@ -56,7 +56,7 @@ dt_wrapper <- function(x) {
 
 This is a working document for analyses related to the Off-label & Off-guideline manuscript chaired by Jeremy Warner.
 
-The regimen/drug data is filtered in all tables to **exclude Investigational Drugs**.
+The regimen/drug data is filtered in all tables to **exclude Investigational Drugs**.  Updated to also exclude any agent used as a part of a clinical trial (`drugs_ct_yn`) in Feb 2024.
 
 ### Cohort filters
 
@@ -129,9 +129,17 @@ dft_ind_mapped <- readr::read_rds(
 
 
 ```{r}
+# Data on drug/indication links:
 dft_hdrug_det <- readr::read_rds(
   here('data', 'linked_approvals', 'hdrug_determinations.rds')
 )
+
+dft_poss_app <- readr::read_rds(
+  here('data', 'linked_approvals', 'possible_approvals.rds')
+)
+
+
+
 ```
 
 
@@ -645,41 +653,14 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 
 ```
 
-### *Crosswalk success
+#### *Crosswalk success
 
 - Of the `r length(vec_bpc_drugs)` unique drugs in our BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
   - The agents which we couldn't map to anything in the indications sheet are: `r vec_bpc_drugs_not_mapped`.  All used very few times in BPC.
 - Of the `r nrow(dft_hdrug_det)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
 
 
-
-```{r}
-dft_off_label_uses <- dft_hdrug_det %>%
-  count_off_label(.) %>%
-  filter(n_off_label > 0)
-
-dft_hdrug_det_first_day <- dft_hdrug_fxd %>%
-  filter_drugs_first_x_days(
-    ., 
-    x = 0, # within 0 days to start.
-    var_index_time = 'dx_first_drug_use_int'
-  ) %>%
-  select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
-  left_join(
-    .,
-    dft_hdrug_det,
-    by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
-  )
-    
-dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
-  # This drops the excluded drugs from link_drugs_indications.R
-  filter(agent %in% dft_hdrug_det$agent) %>%
-  count_off_label(.) %>%
-  filter(n_off_label > 0)
-
-```
-  
-### R3.1 Off label use definition
+### R3.1 Off label use def
 
 Our definition of an on-label use is currently any use of a drug which has a matching row in the indications sheet that meets the following criteria:
 
@@ -757,7 +738,7 @@ dfp_olu_cohort_type <- dft_hdrug_det %>%
   
 ```
 
-### R3.2 Off label use overview
+### R3.2 OLU Overview
 
 By cohort (denominators show the number of total drug uses included):
 
@@ -784,110 +765,113 @@ dfp_olu_cohort_type
 
 
 ```{r}
-simple_olu_disp_help <- function(
-    dat_olu
-) {
-  dat_olu %>%
-    mutate(off_label_uses = n_pct_str(n_off_label, n_uses, show_d = T)) %>%
-    select(-c(n_uses, n_on_label, n_off_label, prop_off_label)) %>%
-    flextable(.) %>%
-    autofit(.)
-}
+dft_off_label_uses <- count_off_label(
+  dft_hdrug_det,
+  group_vars = c('cohort', 'agent', 'off_label_type')
+) %>%
+  filter(n_off_label > 0) %>%
+  select(-c(prop_off_label)) # makes no sense now.
 
-dft_hdrug_det %>%
-  count_off_label(group_vars = c('cohort')) %>%
-  simple_olu_disp_help(.)
+dft_hdrug_det_first_day <- dft_hdrug_fxd %>%
+  filter_drugs_first_x_days(
+    ., 
+    x = 0, # within 0 days to start.
+    var_index_time = 'dx_first_drug_use_int'
+  ) %>%
+  select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
+  left_join(
+    .,
+    dft_hdrug_det,
+    by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
+  )
+    
+dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
+  # This drops the excluded drugs from link_drugs_indications.R
+  filter(agent %in% dft_hdrug_det$agent) %>%
+  count_off_label(
+    ., group_vars = c('cohort', 'agent', 'off_label_type')
+  ) %>%
+  filter(n_off_label > 0) %>%
+  select(-c(prop_off_label)) # makes no sense now.
 
-dft_hdrug_det %>%
-  filter(!valid_ind_exists) %>%
-  count(failure_type_f)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
 
 
 
 ```{r, include = T}
-dft_off_label_uses %>%
+dt_off_label <- dft_off_label_uses %>%
+  select(cohort, agent, off_label_type, n_off_label) %>%
+  arrange(desc(n_off_label)) %>% # good default.
   mutate(
-    pct_off_label = round(prop_off_label * 100)
+    # goal here is enabling quicker searching.
+    off_label_type = str_replace_all(
+      as.character(off_label_type),
+      "[:blank:]", "_"
+    )
   ) %>%
-  select(cohort, agent, n_off_label, pct_off_label) %>%
   dt_wrapper(.)
 ```
 
-Notes:
+### R3.3 OLU table, sortable
 
-- There are some obvious problems here - see the table below for more info on *how* some of these are declared off label.
+The following table shows rows grouped by {cohort, agent, off_label_type}.  For example, a row might show the number of off label uses of capecitabine in the pancreatic cohort, which were due to using a drug before the approval date.
+
+```{r, include = T}
+dt_off_label
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 ```{r}
-dft_off_label_reasons <- dft_hdrug_det %>% 
-  count(cohort, agent, failure_type_f) %>%
-  filter(!is.na(failure_type_f)) %>%
-  group_by(failure_type_f) %>%
-  arrange(desc(n)) %>%
-  slice(1:5) %>%
-  ungroup(.)
-
+dt_off_label_first_drug <- dft_off_label_uses_first_drug %>%
+  select(cohort, agent, off_label_type, n_off_label) %>%
+  arrange(desc(n_off_label)) %>% # good default.
+  mutate(
+    # goal here is enabling quicker searching.
+    off_label_type = str_replace_all(
+      as.character(off_label_type),
+      "[:blank:]", "_"
+    )
+  ) %>%
+  dt_wrapper(.)
 ```
 
-### *R3.1b Off-label reasons
-
-The following table shows the top 5 off label uses for our two ways a use can be declared off label:
-
-```{r, include = T}
-dft_off_label_reasons %>%
-  select(reason = failure_type_f, everything()) %>%
-  flextable(.) %>%
-  merge_v(j = 1) %>% 
-  valign(j = 1, valign =  'top') %>%
-  autofit(.) %>%
-  fix_border_issues(.)
-```
-
-
-
-
-
-
-
-### *R3.2 Off label use, first drug
+### R3.4 OLU, sortable, first drug
 
 The following table is the same as the previous one, except we limit to only the first day of drug use by each person:
  
 ```{r, include = T}
-dft_off_label_uses_first_drug %>%
-  mutate(
-    pct_off_label = round(prop_off_label * 100)
-  ) %>%
-  select(cohort, agent, n_off_label, pct_off_label) %>%
-  dt_wrapper(.)
+dt_off_label_first_drug 
 ```
+
+
+
+
+
+
  
 
-
+## Ch 4 - OLU extras
 
 ```{r}
 dft_reg_num_off_label <- dft_hdrug_det %>%
@@ -953,10 +937,9 @@ gg_comb
 ```
 
 
-### *R3.3 Later = more off label
+### *R4.1 OLU and regimen number
 
 We observed previous that first drugs seem to be on label more frequently and hypothesized that later regimens may have more off label use.  The following graph is a rough expansion on that idea:
-
 
 ```{r, include = T}
 gg_comb
@@ -964,8 +947,57 @@ gg_comb
 
 Notes:
 
-- Generally it appears that off label use increases in later regimens.
-- We can fix this up to use time rather than regimen number for our reader's ease.  This display was primarily chosen because it was easy to make.
+- With the addition of the pancreatic use of capecitabine, this trend vanished.  
+- The short survival in pancreatic cancer and the dominance of this one cohort would be expected to increase the number of early BPC regimens.  A stratified estimate within each cohort may be more illuminating.
+- Using time rather than regimen number would be a better graph.  This display was primarily chosen because it was easy to make.
+
+
+
+```{r}
+dft_poss_app %>% glimpse
+
+# We just re-add the checks:
+dft_hdrug_det_anti_conserv <- add_checks_possible_approvals(
+  dat_poss_app = dft_poss_app,
+  test_cols_to_include = c(
+    'test_ind_exists',
+    'test_met',
+    'test_date_possible'
+    # excluded:  'test_date_possible'
+  )
+) %>% 
+  summarize_possible_approvals_no_fail_type(.)
+
+dft_date_compare <- left_join(
+  (dft_hdrug_det %>%
+     filter(!valid_ind_exists) %>%
+     count(cohort, name = "conservative")),
+  (dft_hdrug_det_anti_conserv %>%
+     filter(!valid_ind_exists) %>%
+     count(cohort, name = "anti_conserv")),
+  by = "cohort"
+)
+
+
+```
+
+
+### R4.2 Date assumptions
+
+Previously we made the most conservative possible assumption on date of drug start.  That is, for each participant, we assumed that their birthday was the last day on their recorded `birth_year`.
+
+We calculated the maximally anti-conservative assumption too:  That they were born on Jan 1 of their `birth_year`.  The following table shows the number of off label uses by cohort when we make those two assumptions:
+
+```{r, include = T}
+dft_date_compare %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+**Notes:**
+
+- Another way to think about the difference between these two columns that it's the number of people who used a drug within the first year of approval.  We can't be sure if it was before or after approval.
+- The subjects in the "fuzzy" period between our two assumptions would be costly to cure/query sites about.
 
 
 
@@ -984,11 +1016,6 @@ dft_ind_mapped %>%
 
 
 ## Issues/concerns
-
-From Nov 21, 2023:
-
-1. Double check that the list of regimens (R1.2) is actually from first and only cancers.  **Confirmed by looking at the `ca_seq` variable for the dataframe.**
-2. Confirm that there are no missing drug start times.  **Confirmed, no missing drug start times.  Other info:  About 4% of drugs have a missing `dx_drug_end_int` and vanishingly few (<0.01%) have a missing `dx_drug_end_or_lastadm_int`**
 
 
 ### Unused conditions
@@ -1017,5 +1044,4 @@ Notes:
 
 ## Upcoming work
 
-- Expand to checking for date of approval.
 - Remove breast sarcomas (about 15 cases in cohort if I recall).

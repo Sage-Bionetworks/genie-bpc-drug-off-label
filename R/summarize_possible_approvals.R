@@ -31,3 +31,21 @@ summarize_possible_approvals <- function(
   return(rtn)
   
 }
+
+summarize_possible_approvals_no_fail_type <- function(
+    dat_poss_app,
+    group_cols = c('cohort', 'record_id', 'ca_seq', 'regimen_number',
+                   'drug_number', 'agent')
+) {
+  check_test_cols_true_false(dat_poss_app)
+  
+  rtn <- dat_poss_app %>%
+    group_by(across(all_of(group_cols))) %>%
+    summarize(
+      valid_ind_exists = sum(test_all, na.rm = T) >= 1,
+      .groups = "drop"
+    )
+  
+  return(rtn)
+  
+}

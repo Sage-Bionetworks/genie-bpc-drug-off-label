@@ -258,7 +258,13 @@ ignored_drugs <- c(
   "ADT/LHRH agonist not specified",
   "Other antineoplastic",
   "Other NOS",
-  "Other hormone"
+  "Other hormone",
+  # Feb 2024 decision:  
+  # We decided not to use interferon because it's too oddly encoded to meaningfully check.
+  "Interferon",
+  "Recombinant Interferon Alfa",
+  "Interferon Alfacon1",
+  "Peginterferon Alfa2b"
 )
 
 dft_clin_dat_wide %<>%

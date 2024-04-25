@@ -45,24 +45,18 @@ dft_clin_dat_wide <- dft_clin_dat %>%
   )
 
 
+# Fix the breast-type deviances in regimen data:
+dft_clin_dat_wide %<>%
+  mutate(
+    # hreg = harmonized regimen data.
+    hreg = purrr::map(
+      .x = reg,
+      .f = \(x) {
+        breast_regimen_fix(x) 
+      }
+    )
+  )
 
-# To see the nonstandard drugs which will be removed:
-# dft_clin_dat_wide %>%
-#   # they happen to be together - the rows that have this variable.
-#   slice(1:3) %>%
-#   mutate(
-#     nonstandard_drugs = purrr::map(
-#       .x = reg, # they happen to be together - the rows that have this variable.
-#       .f = \(x) {
-#         count(x, regimen_drugs, drugs_admin, sort = T) %>%
-#           filter(!is.na(drugs_admin))
-#       }
-#     )
-#   ) %>%
-#   select(cohort, nonstandard_drugs) %>%
-#   unnest(nonstandard_drugs) %>%
-#   group_by(cohort) %>%
-#   slice(1:5)
 
 # Later on we will need a range of possible values for birth date.  Just add now.
 dft_clin_dat_wide %<>%
@@ -79,18 +73,6 @@ dft_clin_dat_wide %<>%
     reg = purrr::map(
       .x = reg,
       .f = remove_nonstandard_admin_drugs
-    )
-  )
-
-# Fix the breast-type deviances in regimen data:
-dft_clin_dat_wide %<>%
-  mutate(
-    # hreg = harmonized regimen data.
-    hreg = purrr::map(
-      .x = reg,
-      .f = \(x) {
-        breast_regimen_fix(x) 
-      }
     )
   )
 

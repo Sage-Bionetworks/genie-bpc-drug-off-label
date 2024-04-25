@@ -869,9 +869,20 @@ dt_off_label_first_drug
 
 
 
+
+
+
+
+
+
+
+
+
+
+
  
 
-## Ch 4 - OLU extras
+## Ch 4 - OLU explorations
 
 ```{r}
 dft_reg_num_off_label <- dft_hdrug_det %>%
@@ -1002,6 +1013,169 @@ dft_date_compare %>%
 
 
 
+
+
+```{r}
+gg_panc_cape <- dft_hdrug_cohort %>%
+  filter(
+    cohort %in% "Pancreas",
+    agent %in% "Capecitabine"
+  ) %>%
+  group_by(record_id) %>%
+  arrange(drug_start_date_max) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  plot_drug_use_times(
+    .,
+    plot_title = "Pancreatic cohort Capecitabine uses",
+    plot_subtitle = "Blue = First approval, Magenta = Conference abstract"
+  ) +
+  geom_vline(xintercept = ymd("2017-01-01"), color = "#ee3377") +
+  geom_vline(xintercept = ymd("2022-12-14"), color = "#33bbee") +
+  coord_cartesian(xlim = ymd(paste0(c(2006, 2023), "01-01")))
+
+
+gg_panc_all_drug <- dft_hdrug_cohort %>%
+  filter(
+    cohort %in% "Pancreas",
+  ) %>%
+  plot_drug_use_times(
+    .,
+    plot_title = "Pancreatic cohort ALL drug uses",
+  ) +
+  coord_cartesian(xlim = ymd(paste0(c(2006, 2023), "01-01")))
+
+
+
+```
+
+### R4.3 Drug use dates (select)
+
+#### R4.3.1 Pancreas, Capecitabine
+
+In our March 2024 meeting we discussed the surprising number of off label uses in the Pancreas cohort for Capecitabine.  One possible explanation is the guidelines and papers showing efficacy coming out well before 2022 (with at least one important abstract in Jan 2017, marked in red below).  The plot below shows the maximum possible start times for Capecitabine in the Pancreas cohort, limited to the first use in each participant.
+
+After seeing the results, we added a lower pane distribution for **all** drug uses (even those we're not considering as candidates for off-label use).  
+
+```{r, include = T}
+cowplot::plot_grid(
+  gg_panc_cape,
+  gg_panc_all_drug,
+  ncol = 1
+)
+```
+
+**Notes:**
+
+- At first glance, this looks hard to believe.  We have a bell shaped curve that shows no sensitivity at all to when the evidence or approval came out, and would roughly align with drug use for the cohort.
+- Relevant dates for this cohort:  Sequenced from 2013-2018, Locked on Dec 31, 2020.
+  - Sanity check:  Allowing 1 year for date uncertainty, we expect to have no drug start date "maximum" guesses before 2022.  This seems to be the case, which is good.
+- There is a convenient fact reassuring me:  The lock date for the cohort was Dec 31, 2020, so no observations should have been made after that date, and the drug was not approved until 2022.  Therefore, any recorded use of the drug is automatically off label. 
+
+
+
+
+```{r}
+gg_pros_olaparib <- dft_hdrug_cohort %>%
+  filter(
+    cohort %in% "Prostate",
+    agent %in% "Olaparib"
+  ) %>%
+  group_by(record_id) %>%
+  arrange(drug_start_date_max) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  plot_drug_use_times(
+    .,
+    plot_title = "Prostate Olaparib uses (first in each patient)",
+    plot_subtitle = "Blue = First FDA approval"
+  ) +
+  geom_vline(xintercept = ymd("2020-05-19"), color = "#33bbee") +
+  coord_cartesian(xlim = ymd(paste0(c(1994, 2023), "01-01")))
+
+gg_pros_all_drug <- dft_hdrug_cohort %>%
+  filter(
+    cohort %in% "Prostate"
+  ) %>%
+  plot_drug_use_times(
+    .,
+    plot_title = "Prostate ALL drug uses",
+  ) +
+  coord_cartesian(xlim = ymd(paste0(c(1994, 2023), "01-01")))
+```
+
+
+
+#### R4.3.2 Prostate, Olaparib
+
+The second most frequent cohort/drug combo which was taken before an approval was Prostate cancer + Olaparib.  The main motivation for doing this is checking that we get something more sensible than the above plots, hoping we don't have a coding error.  Here is the distribution of start drug start times, with the distribution of start times for any drug as a comparison:
+
+```{r, include = T}
+cowplot::plot_grid(
+  gg_pros_olaparib,
+  gg_pros_all_drug,
+  ncol = 1
+)
+```
+
+**Notes:**
+
+- Relevant dates:  The first approval of any kind for Olaparib was in 2014 (Ovarian cancer).  The prostate cancer cohort's lock date was 4/30/2021.
+- This looks slightly better than the Pancreas example above, with no uses before mid-2015, which makes me less supsicious about a coding error.
+- I'm still surprised the approval date appears to have no impact on use.
+
+
+
+
+
+
+```{r}
+gg_nsclc_ipili <- dft_hdrug_cohort %>%
+  filter(
+    cohort %in% "NSCLC",
+    agent %in% "Ipilimumab"
+  ) %>%
+  group_by(record_id) %>%
+  arrange(drug_start_date_max) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  plot_drug_use_times(
+    .,
+    plot_title = "NSCLC Ipilimumab uses (first in each patient)",
+    plot_subtitle = "Blue = First FDA approval"
+  ) +
+  geom_vline(xintercept = ymd("2020-05-15"), color = "#33bbee") +
+  coord_cartesian(xlim = ymd(paste0(c(2002, 2022), "01-01")))
+
+gg_nsclc_all_drug <- dft_hdrug_cohort %>%
+  filter(
+    cohort %in% "NSCLC"
+  ) %>%
+  plot_drug_use_times(
+    .,
+    plot_title = "NSCLC ALL drug uses",
+  ) +
+  coord_cartesian(xlim = ymd(paste0(c(2002, 2022), "01-01")))
+```
+
+#### R4.3.3 NSCLC + Ipilimumab
+
+One more, skipping over the pembro cases which could be attributed to a TMB indication unrelated to cancer type: 
+
+```{r, include = T}
+cowplot::plot_grid(
+  gg_nsclc_ipili,
+  gg_nsclc_all_drug,
+  ncol = 1
+)
+```
+
+**Notes**
+
+- This time it looks like 100% of the subjects who used the drug used it before the label update.
+- First FDA approval for lung cancer:  2020 May 15, first approval for any cancer (melanoma) 2011 March 25.
+
+
 ## Indications sheet
 
 The following table shows a few relevant columns from the `indications.csv` sheet.  This is not filtered, so it contains approvals from other regulators and drugs we've excluded from our analysis.
@@ -1037,6 +1211,43 @@ Notes:
 - The most important condition which is excluded is `"<NONE>"`.  We will need to discuss what those rows represent. 
 - Not all of these conditions describe a drug used in the BPC, and not all of them describe FDA indications (which is our first target).
 
+### Lock dates
+
+One optimization we could do for our guesses on drug use:  Nobody's drug start date can be after the lock date of the data.  For those with a "maximum possible" over the lock date we could round down to the lock date.
+
+
+
+
+
+
+### Miscellaneous from Mar 2024
+
+
+```{r}
+n_ramucirumab_all <- dft_hdrug_cohort %>%
+  filter(agent %in% "Ramucirumab") %>%
+  nrow(.)
+
+```
+
+- **Question: Is Ramucirumab used in the Bladder cohort?**
+  - No.  There are `r n_ramucirumab_all` uses in the BPC cohorts, but none are from Bladder.  The only uses are in NSCLC (mostly) and CRC.
+  
+```{r}
+pros_ca_ind <- dft_all_cases %>% 
+  filter(cohort %in% "Prostate") %>%
+  pull(ca_ind) %>%
+  `[[`(.,1)
+
+pros_ca_ind %>%
+  count(path_pros_pat)
+```
+
+
+
+- **Question: Does neuroendocrine histologic pattern explain the use of Lutetium Lu 177 Dotatate?**
+  - Unfortunately the relevant field from the pathology dataset,  "Prostate Cancer: Specialized Histologic Pattern (Across All Prostate Specimens" (`path_pros_pat`) appears to be missing or "not noted" for 95% of samples.  Out of the 13 first and only prostate cancer with lutetium use in the prostate cohort, none had a neuroendocrine subtype noted.  This doesn't mean a ton with 95% missing data of course.
+  - If others are aware of other BPC variables that would indicate this let me know.
 
 
 

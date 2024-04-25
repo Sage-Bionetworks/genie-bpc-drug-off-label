@@ -24,5 +24,7 @@ library(plotly)
 library(htmltools)
 library(DT)
 library(ggtext)
+library(scales)
+library(cowplot)
 
 library(cfmisc)

@@ -1234,16 +1234,8 @@ n_ramucirumab_all <- dft_hdrug_cohort %>%
   - No.  There are `r n_ramucirumab_all` uses in the BPC cohorts, but none are from Bladder.  The only uses are in NSCLC (mostly) and CRC.
   
 ```{r}
-pros_ca_ind <- dft_all_cases %>% 
-  filter(cohort %in% "Prostate") %>%
-  pull(ca_ind) %>%
-  `[[`(.,1)
-
-pros_ca_ind %>%
-  count(path_pros_pat)
+# No code on this, I used the prostate cohort project for ease.
 ```
-
-
 
 - **Question: Does neuroendocrine histologic pattern explain the use of Lutetium Lu 177 Dotatate?**
   - Unfortunately the relevant field from the pathology dataset,  "Prostate Cancer: Specialized Histologic Pattern (Across All Prostate Specimens", `path_pros_pat`, appears to be missing or "not noted" for 95% of samples.  Out of the 13 first and only prostate cancers with lutetium use, none had a neuroendocrine subtype noted in any of their samples.  This doesn't mean a ton with 95% missing data of course.

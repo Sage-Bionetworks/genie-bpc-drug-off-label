@@ -44,6 +44,17 @@ dft_clin_dat_wide <- dft_clin_dat %>%
     values_from = dat
   )
 
+# Track the flow of drugs as we subset and limit things:
+dft_drug_tracking <- tibble(
+  step = "Raw data",
+  drug_key = list(tracking_hdrug_helper(dft_clin_dat_wide,
+                                        dat_name = "reg"))
+)
+
+
+
+
+
 
 # Fix the breast-type deviances in regimen data:
 dft_clin_dat_wide %<>%
@@ -57,7 +68,6 @@ dft_clin_dat_wide %<>%
     )
   )
 
-
 # Later on we will need a range of possible values for birth date.  Just add now.
 dft_clin_dat_wide %<>%
   mutate(
@@ -70,12 +80,20 @@ dft_clin_dat_wide %<>%
 # Remove drugs with a non-standard administration route (decided Nov 21, 2023)
 dft_clin_dat_wide %<>%
   mutate(
-    reg = purrr::map(
-      .x = reg,
+    hreg = purrr::map(
+      .x = hreg,
       .f = remove_nonstandard_admin_drugs
     )
   )
 
+dft_drug_tracking <- bind_rows(
+  dft_drug_tracking, 
+  tibble(
+    step = "Nonstandard admin routes removed",
+    drug_key = list(tracking_hdrug_helper(dft_clin_dat_wide))
+  )
+)
+    
 
 
 
@@ -186,7 +204,7 @@ dft_clin_dat_wide %<>%
     )
   )
 
-# Remove any investigational drug regimens from the dataset.
+
 dft_clin_dat_wide %<>%
   mutate(
     hreg = purrr::map(
@@ -194,6 +212,14 @@ dft_clin_dat_wide %<>%
       .f = remove_clinical_trial_regimens
     )
   )
+
+dft_drug_tracking <- bind_rows(
+  dft_drug_tracking, 
+  tibble(
+    step = "Remove clinical trial and investigational regimens",
+    drug_key = list(tracking_hdrug_helper(dft_clin_dat_wide))
+  )
+)
 
 
 
@@ -234,6 +260,15 @@ dft_clin_dat_wide %<>%
     )
   )
 
+dft_drug_tracking <- bind_rows(
+  dft_drug_tracking, 
+  tibble(
+    step = "Remove ignored drugs (interferon, others, BCG, etc.)",
+    drug_key = list(tracking_hdrug_subset(dft_clin_dat_wide))
+  )
+)
+
+
 # Fix one drug names which cause particular problems down the line.
 # "Etoposide" only has phosphate appended once and it causes some 
 #    headaches on linking to the Warner materials to have both.  Easier to
@@ -272,6 +307,10 @@ readr::write_rds(
 
 
 
+
+
+
+
 # New proposal: we will start with "first and only" cancer cases.
 # This is neatly described in PRISSMM fortunately.
 # Later on this will probably get significantly more annoying.
@@ -294,9 +333,34 @@ dft_clin_dat_wide %<>%
         purrr::map(
           .x = l_of_dat,
           .f = \(x) {
-            x %>% 
-              help_first_and_only(.) %>%
+            x %>%
               help_us_sites(.)
+          }
+        )
+      })
+    )
+  )
+
+
+dft_drug_tracking <- bind_rows(
+  dft_drug_tracking, 
+  tibble(
+    step = "Remove non-US sites (UHN)",
+    drug_key = list(tracking_hdrug_subset(dft_clin_dat_wide))
+  )
+)
+
+
+dft_clin_dat_wide %<>%
+  mutate(
+    across(
+      .cols = -c(cohort, pt),
+      .fns = (function(l_of_dat) {
+        purrr::map(
+          .x = l_of_dat,
+          .f = \(x) {
+            x %>%
+              help_first_and_only(.)
           }
         )
       })
@@ -307,8 +371,18 @@ dft_clin_dat_wide %<>%
 # lapply(dft_clin_dat_wide$ca_non_ind, nrow)
 # We could delete it for coherence, but I'm relying on having it so... nevermind.
 
+dft_drug_tracking <- bind_rows(
+  dft_drug_tracking, 
+  tibble(
+    step = "Limit to first-and-only cancers",
+    drug_key = list(tracking_hdrug_subset(dft_clin_dat_wide))
+  )
+)
+
+
 dft_clin_dat_wide %<>%
-  # for the patient column we'll just limit to those which are in the ca_ind column:
+  # To do the first-and-only thing patient dataset we'll just limit to those 
+  #   which are in the ca_ind column:
   mutate(
     pt = purrr::map2(
       .x = pt,
@@ -383,4 +457,7 @@ readr::write_rds(
   x = dft_clin_dat_wide,
   file = here('data', 'cohort', 'clin_dat_wide.rds')
 )
-
+readr::write_rds(
+  x = dft_clin_dat_wide,
+  file = here('data', 'cohort', 'drug_tracking_process_clinical.rds')
+)

@@ -1246,7 +1246,7 @@ pros_ca_ind %>%
 
 
 - **Question: Does neuroendocrine histologic pattern explain the use of Lutetium Lu 177 Dotatate?**
-  - Unfortunately the relevant field from the pathology dataset,  "Prostate Cancer: Specialized Histologic Pattern (Across All Prostate Specimens" (`path_pros_pat`) appears to be missing or "not noted" for 95% of samples.  Out of the 13 first and only prostate cancer with lutetium use in the prostate cohort, none had a neuroendocrine subtype noted.  This doesn't mean a ton with 95% missing data of course.
+  - Unfortunately the relevant field from the pathology dataset,  "Prostate Cancer: Specialized Histologic Pattern (Across All Prostate Specimens", `path_pros_pat`, appears to be missing or "not noted" for 95% of samples.  Out of the 13 first and only prostate cancers with lutetium use, none had a neuroendocrine subtype noted in any of their samples.  This doesn't mean a ton with 95% missing data of course.
   - If others are aware of other BPC variables that would indicate this let me know.
 
 

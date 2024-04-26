@@ -458,6 +458,6 @@ readr::write_rds(
   file = here('data', 'cohort', 'clin_dat_wide.rds')
 )
 readr::write_rds(
-  x = dft_clin_dat_wide,
-  file = here('data', 'cohort', 'drug_tracking_process_clinical.rds')
+  x = dft_drug_tracking,
+  file = here('data', 'cohort', 'drug_tracking_01.rds')
 )

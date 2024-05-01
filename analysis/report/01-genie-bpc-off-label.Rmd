@@ -580,9 +580,9 @@ dft_over_ex$plt_drug_case[[6]]
 
 
 
-## *Ch 3 - Joining to indications
+## Ch 3 - Joining to indications
 
-### *R3.0 Linkage Strategy
+### R3.0 Linkage Strategy
 
 To generate a list of potential approvals we will join two datasets:
 
@@ -653,7 +653,7 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 
 ```
 
-#### *Crosswalk success
+#### Crosswalk success
 
 - Of the `r length(vec_bpc_drugs)` unique drugs in our BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
   - The agents which we couldn't map to anything in the indications sheet are: `r vec_bpc_drugs_not_mapped`.  All used very few times in BPC.
@@ -886,7 +886,7 @@ dt_off_label_first_drug
 
 ```{r}
 dft_reg_num_off_label <- dft_hdrug_det %>%
-  group_by(record_id, regimen_number) %>%
+  group_by(cohort, record_id, regimen_number) %>%
   summarize(
     any_off_label = as.numeric(any(valid_ind_exists %in% F)),
     .groups = "drop"
@@ -902,26 +902,44 @@ dft_reg_num_off_label <- dft_hdrug_det %>%
   #   prop_off_label = n_off / n_total
   # )
 
+dft_reg_num_off_label_sum <- dft_reg_num_off_label %>%
+  group_by(cohort, regimen_number) %>%
+  summarize(
+    prop_off_label = mean(any_off_label, na.rm = T), 
+    n = n(),
+    .groups = "drop"
+  )
+
 gg_smooth <- ggplot(
   dft_reg_num_off_label,
-  aes(y = any_off_label, x = regimen_number)
+  aes(y = any_off_label, x = regimen_number, color = cohort)
 ) + 
-  geom_smooth(color = "#3e5622", fill = "#95A683") +
+  geom_smooth(se = F) + 
+  geom_point(
+    data = dft_reg_num_off_label_sum,
+    aes(y = prop_off_label, size = n)
+  ) + 
   scale_x_continuous(
     breaks = seq(1, 101, by = 10),
     name = "BPC Regimen number"
   ) +
   scale_y_continuous(
     name = "Proportion",
-    breaks = seq(0, 100, by = 5) / 100,
-    labels = paste0(seq(0, 100, by = 5), "%"),
+    breaks = seq(0, 100, by = 10) / 100,
+    labels = label_percent(),
     expand = c(0,0)
   ) + 
   labs(title = "Proportion of subjects with any off label use (penalized spline)") + 
   theme_bw() + 
   theme(
     axis.title = element_markdown(angle = 0)
-  )
+  ) +
+  scale_color_vibrant() + 
+  scale_size(range = c(0.25, 3)) +
+  guides(size = "none")
+
+gg_smooth
+
 gg_data_density <- ggplot(
     dft_reg_num_off_label,
     aes(x = regimen_number)
@@ -940,7 +958,8 @@ gg_comb <- cowplot::plot_grid(
   gg_smooth,
   gg_data_density,
   ncol = 1,
-  rel_heights = c(70,30)
+  rel_heights = c(70,30),
+  align = 'v'
 )
   
 gg_comb
@@ -956,11 +975,11 @@ We observed previous that first drugs seem to be on label more frequently and hy
 gg_comb
 ```
 
-Notes:
+**Notes:**
 
-- With the addition of the pancreatic use of capecitabine, this trend vanished.  
-- The short survival in pancreatic cancer and the dominance of this one cohort would be expected to increase the number of early BPC regimens.  A stratified estimate within each cohort may be more illuminating.
-- Using time rather than regimen number would be a better graph.  This display was primarily chosen because it was easy to make.
+- Size of the dots is the number of observations we have at that regimen number (after all of our filtering).
+- Proportions of regimens containing some off label use and the trend over time vary a lot by cohort.
+- The most unusual group is pancreas, which has a high off label use proportion even for first line therapies.
 
 
 
@@ -1049,13 +1068,13 @@ gg_panc_all_drug <- dft_hdrug_cohort %>%
 
 ```
 
-### R4.3 Drug use dates (select)
+### *R4.3 Drug use dates (select)
 
-#### R4.3.1 Pancreas, Capecitabine
+#### *R4.3.1 Pancreas, Capecitabine
 
 In our March 2024 meeting we discussed the surprising number of off label uses in the Pancreas cohort for Capecitabine.  One possible explanation is the guidelines and papers showing efficacy coming out well before 2022 (with at least one important abstract in Jan 2017, marked in red below).  The plot below shows the maximum possible start times for Capecitabine in the Pancreas cohort, limited to the first use in each participant.
 
-After seeing the results, we added a lower pane distribution for **all** drug uses (even those we're not considering as candidates for off-label use).  
+After seeing the results, we added a lower pane distribution for **all** drug uses (even those we're not considering as candidates for off-label use).  The point of this is to provide a comparator distribution for when subjects in this cohort were starting drugs overall.  
 
 ```{r, include = T}
 cowplot::plot_grid(
@@ -1106,9 +1125,9 @@ gg_pros_all_drug <- dft_hdrug_cohort %>%
 
 
 
-#### R4.3.2 Prostate, Olaparib
+#### *R4.3.2 Prostate, Olaparib
 
-The second most frequent cohort/drug combo which was taken before an approval was Prostate cancer + Olaparib.  The main motivation for doing this is checking that we get something more sensible than the above plots, hoping we don't have a coding error.  Here is the distribution of start drug start times, with the distribution of start times for any drug as a comparison:
+The second most frequent cohort/drug combo which was taken before an approval was Prostate cancer + Olaparib.  I was motivated to look into this partially to see if the above plot could be a coding error.  Here is the distribution of start drug start times, with the distribution of start times for any drug as a comparison:
 
 ```{r, include = T}
 cowplot::plot_grid(
@@ -1158,7 +1177,7 @@ gg_nsclc_all_drug <- dft_hdrug_cohort %>%
   coord_cartesian(xlim = ymd(paste0(c(2002, 2022), "01-01")))
 ```
 
-#### R4.3.3 NSCLC + Ipilimumab
+#### *R4.3.3 NSCLC + Ipilimumab
 
 One more, skipping over the pembro cases which could be attributed to a TMB indication unrelated to cancer type: 
 
@@ -1174,6 +1193,56 @@ cowplot::plot_grid(
 
 - This time it looks like 100% of the subjects who used the drug used it before the label update.
 - First FDA approval for lung cancer:  2020 May 15, first approval for any cancer (melanoma) 2011 March 25.
+
+
+### *R4.4 Sites, OLU
+
+
+```{r}
+dft_panc_cases <- dft_all_cases %>%
+  filter(cohort %in% "Pancreas") %>%
+  select(ca_ind) %>%
+  unnest(ca_ind) %>%
+  mutate(site = infer_site_from_subject(record_id)) %>%
+  count(site, name = "panc_cohort_cases") %>%
+  filter(!(site %in% "UHN"))
+
+dft_panc_sites <- dft_hdrug_det %>%
+  mutate(site = infer_site_from_subject(record_id)) %>%
+  filter(agent %in% "Capecitabine" & cohort %in% "Pancreas") %>%
+  group_by(site) %>%
+  summarize(
+    n_pts_capecitabine = length(unique(record_id))
+  )
+
+dft_panc_cases <- left_join(
+  dft_panc_sites,
+  dft_panc_cases,
+  by = "site"
+) %>%
+  mutate(prop = n_pct_str(n_pts_capecitabine, panc_cohort_cases, show_d = T))
+
+
+```
+
+#### *Pancreas + Capecitabine
+
+The following table shows how many patients used capecitabine (automatically off label) in the pancreatic cohort.  The denominator we use to estimate the percentage is the number of total patients in each cohort from that site:
+
+```{r}
+#| include: true
+
+dft_panc_cases %>%
+  select(site, `Cape. \ Cohort` = prop) %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+**Notes:**
+
+- Our hypothesis was that maybe this cohort of Capecitabine users was dominated by MSK, where we might expect more out-of-pocket payment.  This does not appear to be a strong effect, it's at all three sites and slightly more popular at MSK.
+
+
 
 
 ## Indications sheet
@@ -1227,15 +1296,19 @@ One optimization we could do for our guesses on drug use:  Nobody's drug start d
 n_ramucirumab_all <- dft_hdrug_cohort %>%
   filter(agent %in% "Ramucirumab") %>%
   nrow(.)
-
 ```
 
 - **Question: Is Ramucirumab used in the Bladder cohort?**
   - No.  There are `r n_ramucirumab_all` uses in the BPC cohorts, but none are from Bladder.  The only uses are in NSCLC (mostly) and CRC.
   
 ```{r}
-# No code on this, I used the prostate cohort project for ease.
+n_enfortumab_bladder <- dft_hdrug_cohort %>%
+  filter(agent %in% "Enfortumab Vedotin" & cohort %in% "Bladder") %>%
+  nrow(.)
 ```
+
+- **Question: What about enfortumab in the Bladder cohort?**
+  - Used `r n_enfortumab_bladder` times total, so not a ton of data here.
 
 - **Question: Does neuroendocrine histologic pattern explain the use of Lutetium Lu 177 Dotatate?**
   - Unfortunately the relevant field from the pathology dataset,  "Prostate Cancer: Specialized Histologic Pattern (Across All Prostate Specimens", `path_pros_pat`, appears to be missing or "not noted" for 95% of samples.  Out of the 13 first and only prostate cancers with lutetium use, none had a neuroendocrine subtype noted in any of their samples.  This doesn't mean a ton with 95% missing data of course.
@@ -1248,3 +1321,7 @@ n_ramucirumab_all <- dft_hdrug_cohort %>%
 ## Upcoming work
 
 - Remove breast sarcomas (about 15 cases in cohort if I recall).
+- Add in checks for TNBC and possibly castrate-resistant prostate cancer.  The second one is a big dicey because the med onc notes are imperfectly used.
+- Bring in genomic information for:
+  - TMB in prostate.
+  - BRAF or ERBB2.  We would expect one of these in CRC use of trastuzumab and vemurafenib.

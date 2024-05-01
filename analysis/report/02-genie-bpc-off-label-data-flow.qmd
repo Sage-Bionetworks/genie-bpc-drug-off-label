@@ -209,7 +209,7 @@ Another way to look at this is the proportion of drugs remaining, as a portion o
 gg_comb_left
 ```
 
-Here is the drugs uses information over {cohort, step} in table form:
+Here is the drug uses information over {cohort, step} in table form:
 
 ```{r}
 #| include: true
@@ -305,6 +305,4 @@ drugs_lost_help(dft_drugs_lost, "Prostate")
 
 ## Future expansion
 
-Expansions which would take some time, and possibly require repairing code in other places:
-
-- Reorganizing the order of restrictions to something more sensible, like restrictions on cases followed by restrictions on drugs.  The current order is mostly historical.
+It seems worthwile to reorganizing the order of restrictions to something more sensible, like restrictions on cases followed by restrictions on drugs.  The current order is mostly historical.  Doing this would possibly break some of the main report code.

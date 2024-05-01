@@ -17,3 +17,5 @@ rmarkdown::render(
   input = here('analysis', 'report', '01-genie-bpc-off-label.Rmd'),
   output_file = here('output', '01-genie-bpc-off-label.html')
 )
+
+# Render for 02 report.

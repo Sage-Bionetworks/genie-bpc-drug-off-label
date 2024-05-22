@@ -1284,7 +1284,14 @@ The following graph shows the number of mentions of "cape", which tend to be thi
 gg_nccn_cape
 ```
 
+**Notes**
 
+- We all know "number of mentions" is not a good metric - just a starting point so we can read versions where there's a big difference.  Here's some reading notes:
+  - 2007 closer look:  My reading is they're saying you can use Capecitabine as second line thearpy in advanced disease.  A study pops up in the references.
+  - 2012 closer look:  Recommendations for use look expanded, adjuvant and neoadjuvant recommendations, and with radiation.  It also appears in flow charts now, and there's mentions of CapeOx and other combos.
+  - 2017 closer look:  Seems recommended for tons of things at this point, a phase 3 trial pops up in the references which I think many in the group remembered.
+- Even though guidelines may "explain" the use, it still seems interesting that they outpaced the approvals so dramatically.
+- Some of the very old guidelines didn't parse well, I'm not going to bother trying to fix since 2003 parsed OK with no mentions.
 
 
 

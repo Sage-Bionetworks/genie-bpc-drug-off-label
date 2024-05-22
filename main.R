@@ -12,6 +12,7 @@ source(here('analysis', 'script', 'process_clinical_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
 source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))
+source(here('analysis', 'script', 'scrape_guidelines.R'))
 
 rmarkdown::render(
   input = here('analysis', 'report', '01-genie-bpc-off-label.Rmd'),

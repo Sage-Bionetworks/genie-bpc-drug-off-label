@@ -137,8 +137,14 @@ dft_hdrug_det <- readr::read_rds(
 dft_poss_app <- readr::read_rds(
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
+```
 
 
+```{r}
+# scraped data on capecitabine:
+dft_nccn_sum <- readr::read_rds(
+  here('data', 'nccn_panc_capecitabine_sum.rds')
+)
 
 ```
 
@@ -1241,6 +1247,44 @@ dft_panc_cases %>%
 **Notes:**
 
 - Our hypothesis was that maybe this cohort of Capecitabine users was dominated by MSK, where we might expect more out-of-pocket payment.  This does not appear to be a strong effect, it's at all three sites and slightly more popular at MSK.
+
+
+
+
+
+
+
+```{r}
+gg_nccn_cape <- ggplot(
+  dft_nccn_sum,
+  aes(x = date, y = n_text_matches)
+) + 
+  geom_point() + 
+  labs(
+    x = "Guideline date (file name)",
+    y = "Number of text matches",
+    title = "String search of PDF files",
+    subtitle = "Strings matching 'Cape*', except 'Capello'"
+  ) + 
+  theme_bw() + 
+  theme(
+    plot.title.position = "plot"
+  )
+```
+
+### *R4.5 Guidelines + Capecitabine
+
+*Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This section was easy after that was done!
+
+We discussed above the possibility that the NCCN guidelines could precede approvals and have an impact on the way people treat.  I thought a text parse of the PDFs, just counting up occurrences of Capecitabine, would be a reasonable way to start.
+
+The following graph shows the number of mentions of "cape", which tend to be things like "Capecitabine" and "CapeOx".  I excluded "Capello", which is an author's name appearing in the references later on.
+
+```{r, include = T, fig.height = 3}
+gg_nccn_cape
+```
+
+
 
 
 

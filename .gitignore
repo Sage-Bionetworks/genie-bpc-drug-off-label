@@ -88,3 +88,5 @@ renv/staging/
 data
 data-raw
 analysis/explore/old_drugs_files
+.quarto
+

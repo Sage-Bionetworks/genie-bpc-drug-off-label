@@ -1371,7 +1371,6 @@ n_enfortumab_bladder <- dft_hdrug_cohort %>%
 
 ## Upcoming work
 
-- Remove breast sarcomas (about 15 cases in cohort if I recall).
 - Add in checks for TNBC and possibly castrate-resistant prostate cancer.  The second one is a big dicey because the med onc notes are imperfectly used.
 - Bring in genomic information for:
   - TMB in prostate.

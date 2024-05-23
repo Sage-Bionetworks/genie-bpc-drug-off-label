@@ -51,7 +51,7 @@ get_dmet_time <- function(
     dmet_later_stage_iv
   )
   
-  if (max(pull(count(rtn, record_id, ca_seq, sort = T), n), na.rm = T) > 1) {
+  if (max(pull(dplyr::count(rtn, record_id, ca_seq, sort = T), n), na.rm = T) > 1) {
     cli::cli_abort("Duplicated rows - clear error")
   }
   

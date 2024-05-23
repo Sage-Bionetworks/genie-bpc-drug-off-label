@@ -37,6 +37,36 @@ dft_clin_dat %<>%
 
 
 
+# Special concern:  Remove breast sarcomas.
+vec_breast_sarcoma <- dft_clin_dat %>% 
+  filter(short_name %in% "ca_ind" & cohort %in% "BrCa") %>%
+  pull(dat) %>%
+  `[[`(.,1) %>%
+  filter(ca_hist_adeno_squamous %in% "Sarcoma") %>%
+  pull(record_id)
+# Note:  We can ignore ca_seq here because we happen to be limiting to 
+# first and only cancers later on.  Anyone with a first sarcoma will be eliminated, and everyone with a ca_seq >= 1 will be eliminated 
+# later on no matter what we do.
+
+
+dft_clin_dat %<>%
+  mutate(
+    dat = map2(
+      .x = dat,
+      .y = cohort,
+      .f = \(d,coh) {
+        if (coh %in% "BrCa") {
+          d %>% filter(!(record_id %in% vec_breast_sarcoma))
+        } else {
+          d # do nothing.
+        }
+      }
+    )
+  )
+          
+
+
+
 dft_clin_dat_wide <- dft_clin_dat %>%
   select(cohort, short_name, dat) %>%
   pivot_wider(

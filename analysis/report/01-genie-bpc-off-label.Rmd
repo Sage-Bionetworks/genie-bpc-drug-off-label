@@ -1263,7 +1263,7 @@ gg_nccn_cape <- ggplot(
   labs(
     x = "Guideline date (file name)",
     y = "Number of text matches",
-    title = "String search of PDF files",
+    title = "String matches from PDF pancreas NCCN guidelines",
     subtitle = "Strings matching 'Cape*', except 'Capello'"
   ) + 
   theme_bw() + 
@@ -1340,7 +1340,7 @@ One optimization we could do for our guesses on drug use:  Nobody's drug start d
 
 
 
-### Miscellaneous from Mar 2024
+### *Miscellaneous from Mar 2024
 
 
 ```{r}
@@ -1364,14 +1364,52 @@ n_enfortumab_bladder <- dft_hdrug_cohort %>%
 - **Question: Does neuroendocrine histologic pattern explain the use of Lutetium Lu 177 Dotatate?**
   - Unfortunately the relevant field from the pathology dataset,  "Prostate Cancer: Specialized Histologic Pattern (Across All Prostate Specimens", `path_pros_pat`, appears to be missing or "not noted" for 95% of samples.  Out of the 13 first and only prostate cancers with lutetium use, none had a neuroendocrine subtype noted in any of their samples.  This doesn't mean a ton with 95% missing data of course.
   - If others are aware of other BPC variables that would indicate this let me know.
+  
+  
+```{r}
+dat_prostate_ca_ind <- readr::read_rds(
+  here('data', 'no_ca_seq_filter', 'clin_dat_wide.rds')
+) %>%
+  filter(cohort %in% "Prostate") %>%
+  pull(ca_ind) %>%
+  `[[`(.,1)
+dat_prostate_ca_ind %<>% 
+  filter(stage_dx_iv %in% "Stage IV")
+
+dat_prostate_ca_ind %<>%
+  mutate(
+    ca_dmets_yn = case_when(
+      str_detect(ca_dmets_yn, "No") ~ "No, S4, no dmet ...",
+      T ~ ca_dmets_yn
+    )
+  )
+```
+
+  
+  
+- **Question:  Is Stage IVa the same as "Stage IV without distant mets" in prostate cancer?**
+
+  - *Summary: We can't tell for sure, but there are no signs of a direct violation of that concept*
+  - Detailed staging is covered by a few variables: (1) `best_ajcc_stage_cd` which comes from the tumor registry, and (2) `ca_stage` or `ca_path_group_stage` which come from curation if the tumor registry data is not available.  In this case (Stage IV prostate cancer), `ca_path_group_stage` and `ca_stage` are not completed by design, and `ca_stage` is not even in the datasets, so we're left with just the tumor registry data.  Here's a crosstabulation between `ca_dmets_yn` (rows, slightly rephrased for length) and `best_ajcc_stage_cd` (columns):
+  
+```{r, include = T}
+dat_prostate_ca_ind %>%
+  tabyl(
+    ca_dmets_yn, best_ajcc_stage_cd
+  )
+```
+
+
+*Notes:* The vast majority are just "4" or missing, so we don't know.  For those that are 4A, they don't have dmets, and for those that are 4B they do.  So we have few signs, but they all align with the hypothesis at least.
 
 
 
 
 
-## Upcoming work
+## Possible future work 
 
-- Add in checks for TNBC and possibly castrate-resistant prostate cancer.  The second one is a big dicey because the med onc notes are imperfectly used.
 - Bring in genomic information for:
   - TMB in prostate.
   - BRAF or ERBB2.  We would expect one of these in CRC use of trastuzumab and vemurafenib.
+- Add in checks for TNBC and possibly castrate-resistant prostate cancer.  The second one is a big dicey because the med onc notes are imperfectly used.
+  

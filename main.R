@@ -9,6 +9,7 @@ source(here('analysis', 'script', 'create_folders.R'))
 # Todo: Fix this so it can be run again without pasting data copies all over.
 # source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'process_clinical_data.R'))
+source(here('analysis', 'script', 'process_genomic_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
 source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))

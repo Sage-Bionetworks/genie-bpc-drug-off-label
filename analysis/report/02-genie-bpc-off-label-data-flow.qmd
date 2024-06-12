@@ -29,6 +29,13 @@ library(fs); library(purrr); library(here);
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 ```
 
+```{r}
+flextable::set_flextable_defaults(
+  table_align = "left"
+)
+```
+
+
 ## Introduction
 
 The question motivating this report is "at what filtering step did we lose all those drugs?"  For example, in the bladder cohort, I shared that we only had 150 drug uses (one person using one drug for one period of time) that made it into our cohort.  This sounds too low for a cohort of 700 people at first glance.  This report shows how much data we're losing at each major step in our process.
@@ -277,31 +284,37 @@ Another question was which drugs are lost when we restrict to those with a first
 
 ```{r}
 #| include: true
+#| ft.align: "left"
 drugs_lost_help(dft_drugs_lost, "Bladder")
 ```
 
 ```{r}
 #| include: true
+#| ft.align: "left"
 drugs_lost_help(dft_drugs_lost, "Breast")
 ```
 
 ```{r}
 #| include: true
+#| ft.align: "left"
 drugs_lost_help(dft_drugs_lost, "CRC")
 ```
 
 ```{r}
 #| include: true
+#| ft.align: "left"
 drugs_lost_help(dft_drugs_lost, "NSCLC")
 ```
 
 ```{r}
 #| include: true
+#| ft.align: "left"
 drugs_lost_help(dft_drugs_lost, "Pancreas")
 ```
 
 ```{r}
 #| include: true
+#| ft.align: "left"
 drugs_lost_help(dft_drugs_lost, "Prostate")
 ```
 

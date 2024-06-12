@@ -146,6 +146,9 @@ dft_nccn_sum <- readr::read_rds(
   here('data', 'nccn_panc_capecitabine_sum.rds')
 )
 
+dft_gen_mark <- readr::read_rds(
+  here('data', 'no_ca_seq_filter', 'genomic_sum.rds')
+)
 ```
 
 
@@ -1284,6 +1287,7 @@ The following graph shows the number of mentions of "cape", which tend to be thi
 gg_nccn_cape
 ```
 
+
 **Notes**
 
 - We all know "number of mentions" is not a good metric - just a starting point so we can read versions where there's a big difference.  Here's some reading notes:
@@ -1292,6 +1296,54 @@ gg_nccn_cape
   - 2017 closer look:  Seems recommended for tons of things at this point, a phase 3 trial pops up in the references which I think many in the group remembered.
 - Even though guidelines may "explain" the use, it still seems interesting that they outpaced the approvals so dramatically.
 - Some of the very old guidelines didn't parse well, I'm not going to bother trying to fix since 2003 parsed OK with no mentions.
+
+
+
+
+
+
+```{r}
+dft_gen_mark <- readr::read_rds(
+  here('data', 'no_ca_seq_filter', 'genomic_sum.rds')
+)
+
+dfp_crc_biomarkers <- dft_hdrug_det %>% 
+  filter(
+    cohort %in% "CRC", 
+    !valid_ind_exists, 
+    agent %in% c("Trastuzumab", "Vemurafenib")
+  ) %>%
+  mutate(`Record [reg]` = glue("{record_id} [{regimen_number}]")) %>%
+  left_join(
+    .,
+    dft_gen_mark,
+    by = "record_id"
+  ) %>%
+    mutate(`Record [reg]` = glue("{record_id} [{regimen_number}]")) %>%
+  select(agent, `Record [reg]`, any_BRAF, any_ERBB2) %>%
+  arrange(agent, `Record [reg]`)
+
+```
+
+
+### *R4.6 Biomarker driven use
+
+We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a mutation in BRAF or ERBB2 which could explain the motivation for use.  The following table provides a flag for each one, ignoring timing entirely (in other words, a BRAF mutation at any time would result in `TRUE`).  `Record [reg]` is the record ID and regimen number.
+
+```{r, include = T}
+flextable(dfp_crc_biomarkers) %>%
+  autofit(.) %>%
+  flextable::merge_v(j = 1) %>%
+  flextable::valign(valign = "top") %>%
+  fix_border_issues(.)
+```
+
+
+**Notes**
+
+- Vemurafenib looks universally accompanied by BRAF.  Trastuzumab has some with neither.
+- This currently only includes mutations.  We can include copy number alterations or fusions if appropriate, which may explain some of the results.
+- The specific mutation is also not yet considered.  Is limiting to V600E better for BRAF?
 
 
 

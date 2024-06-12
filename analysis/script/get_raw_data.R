@@ -85,10 +85,12 @@ purrr::pwalk(
 
 # Add in genomic data:
 synid_maf <- "syn59553458"
-fs::dir_create('data-raw', 'genomic')
-dft_maf <- synGet(
-  entity = synid_maf,
-  downloadLocation = here(
-    'data-raw', 'genomic'
-  )
-)
+synid_clin_samp <- "syn59553454"
+fs::dir_create('data-raw', 'main_genie')
+
+get_and_save_dataset(synid_maf, 'main_genie')
+get_and_save_dataset(synid_clin_samp, 'main_genie')
+
+
+
+

@@ -6,8 +6,7 @@ purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 source(here('analysis', 'script', 'create_folders.R'))
 
-# Todo: Fix this so it can be run again without pasting data copies all over.
-source(here('analysis', 'script', 'get_raw_data.R'))
+# source(here('analysis', 'script', 'get_raw_data.R'))
 source(here('analysis', 'script', 'process_clinical_data.R'))
 source(here('analysis', 'script', 'process_genomic_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))

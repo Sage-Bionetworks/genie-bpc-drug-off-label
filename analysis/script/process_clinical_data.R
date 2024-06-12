@@ -17,7 +17,7 @@ dft_clin_dat <- tibble(
   cohort = dir("data-raw")
 ) %>%
   mutate(cohort_path = here("data-raw", cohort)) %>%
-  filter(!(cohort %in% "manual"))
+  filter(cohort %in% c("BLADDER", 'BrCa', 'CRC', 'NSCLC', 'PANC', 'Prostate'))
 
 
 # Run for one cohort example:

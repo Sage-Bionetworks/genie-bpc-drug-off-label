@@ -20,7 +20,8 @@ dft_folders <- tibble::tribble(
   "BLADDER", "syn28495599", # 1.1 consortium
   "BrCa", "syn39802381", # 1.2 consortium
   "CRC", "syn39802279", # 2.0 public
-  "NSCLC", "syn27245047", # 2.0 public 
+  # "NSCLC", "syn27245047", # 2.0 public
+  "NSCLC", "syn54107384", # 3.1 consortium
   "PANC", "syn50612197", # 1.2 consortium
   "Prostate", "syn50612196", # 1.2 consortium
   # cohorts that had no available releases at the time:

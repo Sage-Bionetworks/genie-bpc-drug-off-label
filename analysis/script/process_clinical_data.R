@@ -125,8 +125,6 @@ dft_drug_tracking <- bind_rows(
 )
     
 
-
-
 # Select only the columns we have consistently across all (after fixes)
 hreg_req_col <- c(
   # The ones I actually want:
@@ -259,6 +257,17 @@ dft_clin_dat_wide %<>%
     hdrug = purrr::map(
       .x = hreg,
       .f = create_drug_dat
+    )
+  )
+
+# Trim whitespace from agent names.  Now a bigger problem in NSCLC.
+dft_clin_dat_wide %<>%
+  mutate(
+    hdrug = purrr::map(
+      .x = hdrug,
+      .f = \(z) {
+        mutate(z, agent = str_trim(agent))
+      }
     )
   )
 

@@ -65,7 +65,8 @@ get_and_save_dataset <- function(
     entity = synid, 
     downloadLocation = here(
       "data-raw", 
-      subfolder
+      subfolder,
+      ifcollision = "overwrite.local"
       )
     )
 }

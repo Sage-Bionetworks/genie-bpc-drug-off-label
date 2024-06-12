@@ -277,7 +277,7 @@ drugs_lost_help <- function(dl_dat, c) {
 }
 ```
 
-### Specific drugs lost with 1997 restiction
+### *Specific drugs lost with 1997 restiction
 
 Another question was which drugs are lost when we restrict to those with a first approval after 1997.  Here is a full list for each cohort, showing the drug uses which are lost *in that step only*.  We only show drugs with more than 5 uses filtered in each cohort (drugs with very few uses are more likely to be errors).
 

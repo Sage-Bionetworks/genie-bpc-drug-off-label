@@ -976,7 +976,7 @@ gg_comb
 ```
 
 
-### *R4.1 OLU and regimen number
+### R4.1 OLU and regimen number
 
 We observed previous that first drugs seem to be on label more frequently and hypothesized that later regimens may have more off label use.  The following graph is a rough expansion on that idea:
 
@@ -1077,9 +1077,9 @@ gg_panc_all_drug <- dft_hdrug_cohort %>%
 
 ```
 
-### *R4.3 Drug use dates (select)
+### R4.3 Drug use dates (select)
 
-#### *R4.3.1 Pancreas, Capecitabine
+#### R4.3.1 Pancreas, Capecitabine
 
 In our March 2024 meeting we discussed the surprising number of off label uses in the Pancreas cohort for Capecitabine.  One possible explanation is the guidelines and papers showing efficacy coming out well before 2022 (with at least one important abstract in Jan 2017, marked in red below).  The plot below shows the maximum possible start times for Capecitabine in the Pancreas cohort, limited to the first use in each participant.
 
@@ -1134,7 +1134,7 @@ gg_pros_all_drug <- dft_hdrug_cohort %>%
 
 
 
-#### *R4.3.2 Prostate, Olaparib
+#### R4.3.2 Prostate, Olaparib
 
 The second most frequent cohort/drug combo which was taken before an approval was Prostate cancer + Olaparib.  I was motivated to look into this partially to see if the above plot could be a coding error.  Here is the distribution of start drug start times, with the distribution of start times for any drug as a comparison:
 
@@ -1186,7 +1186,7 @@ gg_nsclc_all_drug <- dft_hdrug_cohort %>%
   coord_cartesian(xlim = ymd(paste0(c(2002, 2022), "01-01")))
 ```
 
-#### *R4.3.3 NSCLC + Ipilimumab
+#### R4.3.3 NSCLC + Ipilimumab
 
 One more, skipping over the pembro cases which could be attributed to a TMB indication unrelated to cancer type: 
 
@@ -1204,7 +1204,7 @@ cowplot::plot_grid(
 - First FDA approval for lung cancer:  2020 May 15, first approval for any cancer (melanoma) 2011 March 25.
 
 
-### *R4.4 Sites, OLU
+### R4.4 Sites, OLU
 
 
 ```{r}
@@ -1234,7 +1234,7 @@ dft_panc_cases <- left_join(
 
 ```
 
-#### *Pancreas + Capecitabine
+#### Pancreas + Capecitabine
 
 The following table shows how many patients used capecitabine (automatically off label) in the pancreatic cohort.  The denominator we use to estimate the percentage is the number of total patients in each cohort from that site:
 
@@ -1275,7 +1275,7 @@ gg_nccn_cape <- ggplot(
   )
 ```
 
-### *R4.5 Guidelines + Capecitabine
+### R4.5 Guidelines + Capecitabine
 
 *Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This section was easy after that was done!
 
@@ -1326,7 +1326,7 @@ dfp_crc_biomarkers <- dft_hdrug_det %>%
 ```
 
 
-### *R4.6 Biomarker driven use
+### R4.6 Biomarker driven use
 
 We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a mutation in BRAF or ERBB2 which could explain the motivation for use.  The following table provides a flag for each one, ignoring timing entirely (in other words, a BRAF mutation at any time would result in `TRUE`).  `Record [reg]` is the record ID and regimen number.
 
@@ -1339,11 +1339,84 @@ flextable(dfp_crc_biomarkers) %>%
 ```
 
 
+
+
+
+
+
+
+```{r}
+dft_cape_regimens <- dft_hdrug_det %>% 
+  group_by(cohort, record_id, ca_seq, regimen_number) %>%
+  mutate(
+    regimen_contains_cape = any(agent %in% "Capecitabine"),
+    regimen_contains_invalid_cape = any(agent %in% "Capecitabine" & !valid_ind_exists)
+  ) %>%
+  ungroup(.) %>%
+  filter(regimen_contains_cape)
+
+dft_cape_compliments <- dft_cape_regimens %>%
+  group_by(cohort, record_id, ca_seq, regimen_number) %>%
+  summarize(
+    taken_with = paste(sort(agent[agent != "Capecitabine"]), collapse = ", "),
+    .groups = "drop"
+  ) %>%
+  mutate(taken_with = if_else(taken_with %in% "", "(monotherapy)", taken_with))
+
+# Put the flag back in for whether these were valid/invalid.
+dft_cape_compliments <- dft_cape_regimens %>%
+  filter(agent %in% "Capecitabine") %>%
+  select(record_id, ca_seq, regimen_number, cape_use_valid = valid_ind_exists) %>%
+  left_join(
+    dft_cape_compliments,
+    .,
+    by = c('record_id', 'ca_seq', 'regimen_number'),
+    relationship = "one-to-one"
+  ) 
+
+dft_cape_comp_sum <- dft_cape_compliments %>%
+  count(cape_use_valid, cohort, taken_with) %>%
+  arrange(cape_use_valid, cohort, desc(n))
+  
+```
+
 **Notes**
 
 - Vemurafenib looks universally accompanied by BRAF.  Trastuzumab has some with neither.
 - This currently only includes mutations.  We can include copy number alterations or fusions if appropriate, which may explain some of the results.
 - The specific mutation is also not yet considered.  Is limiting to V600E better for BRAF?
+
+
+
+
+
+
+
+
+
+### *R4.7 Drugs given with Capecitabine
+
+This is a generalized answer to the question "Was Capecitabine given with Erlotinib often in the pancreatic cohort?".
+
+The following table lists the drugs which accompany regimens where Capecitabine was given.  If Capecitabine was the only drug used in the regimen we just note "(monotherapy)". The counts are in strata defined by whether the use of capecitabine was valid in that regimen, and which cohort the person belongs to.
+
+```{r, include = T}
+dft_cape_comp_sum %>%
+  flextable(.) %>%
+  autofit(.) %>%
+  align(j = 1, align = 'left', part = 'all') %>%
+  merge_v(j = 1:2) %>%
+  valign(j = 1:2, valign = "top") %>%
+  fix_border_issues(.)
+```
+
+**Notes**
+
+- Erlotinib was not frequently given with Capecitabine in the Pancreatic cohort.  It was given in 2 of the three off label uses in NSCLC.
+
+
+
+
 
 
 

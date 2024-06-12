@@ -35,6 +35,21 @@ dft_clin_dat %<>%
   ) %>%
   unnest(loaded_data)
 
+# change the cohort name from "NSCLC2" to "NSCLC".  We have the "phase" column
+# if we ever want to recover that info, not sure why they did this.
+dft_clin_dat %<>%
+  mutate(
+    dat = purrr::map(
+      .x = dat,
+      .f = \(z) {
+        mutate(z, cohort = if_else(cohort %in% "NSCLC2", "NSCLC", cohort))
+      }
+    )
+  )
+
+      
+      
+
 
 
 # Special concern:  Remove breast sarcomas.
@@ -260,13 +275,24 @@ dft_clin_dat_wide %<>%
     )
   )
 
-# Trim whitespace from agent names.  Now a bigger problem in NSCLC.
+# Trim whitespace from agent names.  Now a bigger problem in NSCLCv3.1
 dft_clin_dat_wide %<>%
   mutate(
     hdrug = purrr::map(
       .x = hdrug,
       .f = \(z) {
         mutate(z, agent = str_trim(agent))
+      }
+    )
+  )
+
+# Change "HCL" to Hydrochloride now that we have round 2 of NSCLC... just why?
+dft_clin_dat_wide %<>%
+  mutate(
+    hdrug = purrr::map(
+      .x = hdrug,
+      .f = \(z) {
+        mutate(z, agent = str_replace(agent, "HCL", "Hydrochloride"))
       }
     )
   )

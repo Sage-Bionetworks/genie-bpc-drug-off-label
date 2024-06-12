@@ -127,8 +127,8 @@ manual_matches <- tribble(
   ~component, ~agent, 
   "Paclitaxel nanoparticle albumin-bound", "Nabpaclitaxel",
   "Goserelin", "Goserlin Acetate",
-  # yes, there's really an extra space here...
-  "Radium-223", "Radium RA 223 Dichloride ",
+  # There's whitespace in Radium RA 223, but we fixed that in an earier step now.
+  "Radium-223", "Radium RA 223 Dichloride",
   "Lapatinib", "Lapatinib Ditosylate",
   "Sipuleucel-T", "Sipuleucel T",
   "Ziv-aflibercept", "Ziv Aflibercept",

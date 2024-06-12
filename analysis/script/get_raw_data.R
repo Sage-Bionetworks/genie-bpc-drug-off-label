@@ -65,9 +65,9 @@ get_and_save_dataset <- function(
     entity = synid, 
     downloadLocation = here(
       "data-raw", 
-      subfolder,
-      ifcollision = "overwrite.local"
-      )
+      subfolder
+      ),
+    ifcollision = "overwrite.local"
     )
 }
 
@@ -87,10 +87,12 @@ purrr::pwalk(
 
 # Add in genomic data:
 synid_maf <- "syn59553458"
+synid_cna <- "syn59553452"
 synid_clin_samp <- "syn59553454"
 fs::dir_create('data-raw', 'main_genie')
 
 get_and_save_dataset(synid_maf, 'main_genie')
+get_and_save_dataset(synid_cna, 'main_genie')
 get_and_save_dataset(synid_clin_samp, 'main_genie')
 
 

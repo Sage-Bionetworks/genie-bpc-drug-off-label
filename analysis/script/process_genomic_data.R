@@ -1,9 +1,6 @@
 library(fs); library(purrr); library(here)
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
-# I'm going to grab all the data in the BPC cohorts for now.
-# Meaning we'll get people who have 2+ cancers - it's OK, just a rough trim.
-
 dft_clin_dat_wide <- readr::read_rds(
   here('data', 'no_ca_seq_filter', 'clin_dat_wide.rds')
 )
@@ -17,6 +14,15 @@ dft_maf <- data.table::fread(
   here('data-raw', 'main_genie', 'data_mutations_extended.txt')
 )
 
+dft_cna <- data.table::fread(
+  here('data-raw', 'main_genie', 'data_CNA.txt')
+)
+
+
+
+
+
+# Rough trim to all people in BPC for now, even those with 2+ cancers.
 dft_bpc_id <- dft_clin_dat_wide %>%
   select(ca_ind) %>%
   mutate(ca_ind = map(.x = ca_ind, .f = \(z) select(z, record_id, ca_seq))) %>%
@@ -45,6 +51,21 @@ readr::write_rds(
 )
 
 
+dft_cna_long <- dft_cna %>% 
+  pivot_longer(
+    cols = -Hugo_Symbol,
+    names_to = "cpt_genie_sample_id",
+    values_to = "value"
+  )
+
+dft_cna_long %<>%
+  filter(cpt_genie_sample_id %in% dft_bpc_id$cpt_genie_sample_id)
+
+readr::write_rds(
+  dft_cna_long,
+  here('data', 'no_ca_seq_filter', 'bpc_cna_long.rds')
+)
+
 
 dft_maf %<>%
   as_tibble(.) %>%
@@ -58,14 +79,38 @@ dft_maf %<>%
 dft_maf_sum <- dft_maf %>%
   group_by(record_id) %>%
   summarize(
-    any_BRAF = any(Hugo_Symbol %in% "BRAF", na.rm = T),
-    any_ERBB2 = any(Hugo_Symbol %in% "ERBB2", na.rm = T)
+    any_BRAF_maf = any(Hugo_Symbol %in% "BRAF", na.rm = T),
+    any_ERBB2_maf = any(Hugo_Symbol %in% "ERBB2", na.rm = T)
   )
 
-readr::write_rds(
+dft_cna_sum <- dft_cna_long %>%
+  left_join(., dft_bpc_id, by = "cpt_genie_sample_id") %>%
+  group_by(record_id) %>%
+  summarize(
+    any_BRAF_amp = any(Hugo_Symbol %in% "BRAF" & value %in% 2, na.rm = T),
+    any_ERBB2_amp = any(Hugo_Symbol %in% "ERBB2" & value %in% 2, na.rm = T)
+  )
+
+# Currently this doesn't necessarily cover all genomic samples.  If there was
+#   no row in the cna or maf it could be missing.  Fixable by merge with CPT data.
+dft_gen_sum <- full_join(
   dft_maf_sum,
+  dft_cna_sum,
+  by = c('record_id')
+)
+
+dft_gen_sum %<>%
+  mutate(
+    any_BRAF = any_BRAF_maf | any_BRAF_amp,
+    any_ERBB2 = any_ERBB2_maf | any_ERBB2_amp
+  ) %>%
+  select(record_id, any_BRAF, any_ERBB2)
+  
+readr::write_rds(
+  dft_gen_sum,
   here('data', 'no_ca_seq_filter', 'genomic_sum.rds')
 )
+
   
 
 

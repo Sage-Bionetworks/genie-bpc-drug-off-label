@@ -1258,9 +1258,17 @@ dft_panc_cases %>%
 
 
 ```{r}
+dft_nccn_sum %<>% 
+  mutate(
+    char_norm_match = n_text_matches / alpha_char_count,
+    word_norm_match = n_text_matches / word_count
+  )
+
+pal_cape_guide <- c('#c23917', '#177bc2', '#22856e')
+
 gg_nccn_cape <- ggplot(
   dft_nccn_sum,
-  aes(x = date, y = n_text_matches)
+  aes(x = date, y = char_norm_match)
 ) + 
   geom_point() + 
   labs(
@@ -1269,10 +1277,49 @@ gg_nccn_cape <- ggplot(
     title = "String matches from PDF pancreas NCCN guidelines",
     subtitle = "Strings matching 'Cape*', except 'Capello'"
   ) + 
+  scale_x_date(
+    expand = expansion(mult = c(0.05, 0.1))
+  ) + 
+  scale_y_continuous(
+    breaks = 0:10 * 10^(-4),
+    labels = 0:10,
+    name = "Matches per 10,000 characters"
+  ) + 
   theme_bw() + 
   theme(
     plot.title.position = "plot"
-  )
+  ) + 
+  geom_vline( 
+    xintercept = ymd('2005-01-01'), 
+    color = pal_cape_guide[1]
+  ) + 
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[1],
+    x = ymd('2005-07-01'), y = 0.3 * 10^(-4), hjust = 0,
+    label = "First recommended"
+  ) +
+  geom_vline(
+    xintercept = ymd('2012-01-01'),
+    color = pal_cape_guide[2]
+  ) +
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[2],
+    x = ymd('2012-07-01'), y = 0.3 * 10^(-4), hjust = 0,
+    label = "Widely recommended"
+  ) +
+  geom_vline( 
+    xintercept = ymd('2022-12-14'), 
+    color = pal_cape_guide[3]
+  ) +  
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[3],
+    x = ymd('2022-07-01'), y = 0.9 * 10^(-4), hjust = 1,
+    label = "FDA approved"
+  ) 
+    
+
+gg_nccn_cape
+
 ```
 
 ### R4.5 Guidelines + Capecitabine

@@ -44,7 +44,7 @@ dft_nccn %<>%
 
 dft_nccn %<>%
   mutate(
-    alpha_char_count = purrr::map(
+    alpha_char_count = purrr::map_dbl(
       .x = pdf_vec,
       .f = \(z) {
         sum(stri_count_regex(
@@ -52,7 +52,7 @@ dft_nccn %<>%
         ))
       }
     ),
-    word_count = purrr::map(
+    word_count = purrr::map_dbl(
       .x = pdf_vec,
       .f = \(z) {
         sum(stri_count_regex(
@@ -94,7 +94,8 @@ dft_nccn %<>%
 
 dft_nccn_sum <- select(
   dft_nccn,
-  date, file, active_year, alpha_char_count, word_count, string_matches, n_text_matches
+  date, file, active_year, 
+  alpha_char_count, word_count, string_matches, n_text_matches
 )
 
 readr::write_rds(

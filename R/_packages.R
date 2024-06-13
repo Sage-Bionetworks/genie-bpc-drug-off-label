@@ -1,6 +1,8 @@
 # Load a common set of packages.
 # This is computationally inefficient.
 
+library(readxl)
+
 library(cli)
 library(synapser)
 library(purrr)

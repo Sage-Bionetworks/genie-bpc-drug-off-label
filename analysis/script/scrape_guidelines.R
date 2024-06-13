@@ -1,12 +1,8 @@
+library(fs); library(purrr); library(here)
+purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
-
-library(readxl)
 library(pdftools)
 library(pdftables)
-library(dplyr)
-library(magrittr)
-library(purrr)
-library(stringr)
 
 path_guide <- here('data-raw', 'manual', 'guideline')
 
@@ -24,6 +20,15 @@ dft_nccn %<>%
   select(date, file, active_year) %>%
   mutate(date = lubridate::mdy(date)) %>%
   arrange(date)
+
+# mmmk, some of the early ones didn't work.  We could try to OCR these, but it 
+# doesn't seem worth it since the first ones which DID scan show nothing.
+
+dft_nccn %<>%
+  filter(
+    date > ymd("2001-01-01")
+  )
+
 
 dft_nccn %<>%
   mutate(

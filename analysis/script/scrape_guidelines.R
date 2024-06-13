@@ -3,6 +3,7 @@ purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
 
 library(pdftools)
 library(pdftables)
+library(stringi)
 
 path_guide <- here('data-raw', 'manual', 'guideline')
 
@@ -38,8 +39,28 @@ dft_nccn %<>%
     )
   )
 
-# mmmk, some of the early ones didn't work, but 2003 did and it seemed to have
-#  zero hits.  No problem.
+# illustrative example of the regex we're using:
+# stri_count_regex(c("a bcde.*678", "ab", "a.  \n b \n"), pattern = "[a-zA-Z]")
+
+dft_nccn %<>%
+  mutate(
+    alpha_char_count = purrr::map(
+      .x = pdf_vec,
+      .f = \(z) {
+        sum(stri_count_regex(
+          z, "[a-zA-Z]"
+        ))
+      }
+    ),
+    word_count = purrr::map(
+      .x = pdf_vec,
+      .f = \(z) {
+        sum(stri_count_regex(
+          z, "[a-zA-Z[:punct:]]+"
+        ))
+      }
+    )
+  )
 
 dft_nccn %<>%
   mutate(
@@ -68,9 +89,12 @@ dft_nccn %<>%
     )
   )
 
+
+
+
 dft_nccn_sum <- select(
   dft_nccn,
-  date, file, active_year, string_matches, n_text_matches
+  date, file, active_year, alpha_char_count, word_count, string_matches, n_text_matches
 )
 
 readr::write_rds(

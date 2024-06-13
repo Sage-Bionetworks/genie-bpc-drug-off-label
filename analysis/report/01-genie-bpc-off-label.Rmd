@@ -1324,11 +1324,10 @@ gg_nccn_cape
 
 ### R4.5 Guidelines + Capecitabine
 
-*Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This section was easy after that was done!
+*Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This took care of the majority of work needed to get here, greatly appreciated.
 
-We discussed above the possibility that the NCCN guidelines could precede approvals and have an impact on the way people treat.  I thought a text parse of the PDFs, just counting up occurrences of Capecitabine, would be a reasonable way to start.
+We discussed above the possibility that the NCCN guidelines could precede approvals and have an impact on the way people treat.  The following graph shows the number of mentions of "cape", which tend to be things like "Capecitabine" and "CapeOx".  I excluded "Capello", which is an author's name appearing in the references later on.  This is normalized by the number of alphabetic (not alphanumeric) characters in the guideline, to adjust somewhat for the massive expansion in their size over time.
 
-The following graph shows the number of mentions of "cape", which tend to be things like "Capecitabine" and "CapeOx".  I excluded "Capello", which is an author's name appearing in the references later on.
 
 ```{r, include = T, fig.height = 3}
 gg_nccn_cape
@@ -1337,13 +1336,14 @@ gg_nccn_cape
 
 **Notes**
 
-- We all know "number of mentions" is not a good metric - just a starting point so we can read versions where there's a big difference.  Here's some reading notes:
+- This was always intended to be a starting point to look more closely.  Here's what I found reading selectively:
   - 2007 closer look:  My reading is they're saying you can use Capecitabine as second line thearpy in advanced disease.  A study pops up in the references.
   - 2012 closer look:  Recommendations for use look expanded, adjuvant and neoadjuvant recommendations, and with radiation.  It also appears in flow charts now, and there's mentions of CapeOx and other combos.
   - 2017 closer look:  Seems recommended for tons of things at this point, a phase 3 trial pops up in the references which I think many in the group remembered.
 - Even though guidelines may "explain" the use, it still seems interesting that they outpaced the approvals so dramatically.
-- Some of the very old guidelines didn't parse well, I'm not going to bother trying to fix since 2003 parsed OK with no mentions.
-
+- Some of the very old guidelines didn't parse (need OCR).  Because the first two years that *did* parse show no mentions I'm not going to bother messing with those.
+- I also counted words and normalized that way.  The graphs have an extremely shape with alphabetic characters and words.
+- We did not exclude references.  To me it seems fine if we "double count" both characters and capecitabine mentions, since our goal is just showing when the guidelines started talking about capecitabine.
 
 
 

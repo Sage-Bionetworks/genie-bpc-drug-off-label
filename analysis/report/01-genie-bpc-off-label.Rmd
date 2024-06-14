@@ -1285,7 +1285,7 @@ gg_nccn_cape <- ggplot(
     labels = 0:10,
     name = "Matches per 10,000 characters"
   ) + 
-  theme_bw() + 
+  theme_light() + 
   theme(
     plot.title.position = "plot"
   ) + 
@@ -1318,7 +1318,6 @@ gg_nccn_cape <- ggplot(
   ) 
     
 
-gg_nccn_cape
 
 ```
 
@@ -1375,7 +1374,7 @@ dfp_crc_biomarkers <- dft_hdrug_det %>%
 
 ### R4.6 Biomarker driven use
 
-We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a mutation in BRAF or ERBB2 which could explain the motivation for use.  The following table provides a flag for each one, ignoring timing entirely (in other words, a BRAF mutation at any time would result in `TRUE`).  `Record [reg]` is the record ID and regimen number.
+We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a genomic alteration in BRAF or ERBB2 which could explain the decision to administer these drugs.  The following table provides a flag for each one, ignoring timing entirely.  In other words, a BRAF mutation or amplification (copy number alteration) at any time would result in `TRUE`.  `Record [reg]` is the record ID and regimen number.
 
 ```{r, include = T}
 flextable(dfp_crc_biomarkers) %>%
@@ -1385,6 +1384,9 @@ flextable(dfp_crc_biomarkers) %>%
   fix_border_issues(.)
 ```
 
+**Notes:**
+
+- With CNAs added we see that these drugs are usually accompanied by the expected mutations.
 
 
 

@@ -1321,7 +1321,7 @@ gg_nccn_cape <- ggplot(
 
 ```
 
-### R4.5 Guidelines + Capecitabine
+### *R4.5 Guidelines + Capecitabine
 
 *Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This took care of the majority of work needed to get here, greatly appreciated.
 
@@ -1372,7 +1372,7 @@ dfp_crc_biomarkers <- dft_hdrug_det %>%
 ```
 
 
-### R4.6 Biomarker driven use
+### *R4.6 Biomarker driven use
 
 We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a genomic alteration in BRAF or ERBB2 which could explain the decision to administer these drugs.  The following table provides a flag for each one, ignoring timing entirely.  In other words, a BRAF mutation or amplification (copy number alteration) at any time would result in `TRUE`.  `Record [reg]` is the record ID and regimen number.
 
@@ -1514,7 +1514,7 @@ One optimization we could do for our guesses on drug use:  Nobody's drug start d
 
 
 
-### *Miscellaneous from Mar 2024
+### Miscellaneous from Mar 2024
 
 
 ```{r}

@@ -47,10 +47,10 @@ dft_clin_dat %<>%
     )
   )
 
-      
-      
-
-
+readr::write_rds(
+  dft_clin_dat,
+  here('data-raw', 'clin_dat_untouched.rds')
+)
 
 # Special concern:  Remove breast sarcomas.
 vec_breast_sarcoma <- dft_clin_dat %>% 

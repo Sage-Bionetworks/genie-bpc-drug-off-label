@@ -18,7 +18,7 @@ dft_ind_mapped <- readr::read_rds(
 )
 
 dft_hdrug_ind <- readr::read_rds(
-  here('data', 'linked_approvals', 'hdrug_ind.rds')
+  here('data', 'linked_approvals', 'hdrug_determinations.rds')
 )
 ```
 
@@ -116,7 +116,13 @@ Notes:
 
 
 ```{r}
-gg_cutoff_drug_uses <- dft_hdrug_ind %>%
+hdrug_all <- readr::read_rds(
+  here('data', 'no_ca_seq_filter', 'clin_dat_wide.rds')
+) %>%
+  select(cohort, hdrug) %>%
+  unnest(hdrug)
+
+gg_cutoff_drug_uses <- hdrug_all %>%
   left_join(
     .,
     select(dft_first_approvals, agent = mapped_agent, first_global_date),
@@ -137,13 +143,20 @@ gg_cutoff_drug_uses <- dft_hdrug_ind %>%
     breaks = seq(0, 1, by = 0.25),
     labels = paste0(seq(0, 1, by = 0.25) * 100, "%")
   ) +
-  labs(title =  "Proportion of drug uses **excluded**") + 
+  labs(title =  "Proportion of drug uses **excluded**",
+       subtitle = "From the raw data, independent of other restrictions") + 
   theme_bw() + 
   scale_color_vibrant() +
   theme(
     plot.title = element_markdown(),
     plot.title.position = "plot"
   )
+
+ggsave(
+  gg_cutoff_drug_uses,
+  height = 4, width = 6,
+  filename =here('output', 'img', '03_drug_uses_excluded by cutoff.pdf')
+)
     
 ```
 

@@ -1272,7 +1272,7 @@ gg_nccn_cape <- ggplot(
 ) + 
   geom_point() + 
   labs(
-    x = "Guideline date (file name)",
+    x = "Guideline date",
     y = "Number of text matches",
     title = "String matches from PDF pancreas NCCN guidelines",
     subtitle = "Strings matching 'Cape*', except 'Capello'"
@@ -1280,10 +1280,18 @@ gg_nccn_cape <- ggplot(
   scale_x_date(
     expand = expansion(mult = c(0.05, 0.1))
   ) + 
+  geom_smooth(
+    se = F, 
+    color = "#7f7f7f55", 
+    method = 'loess',
+    span = 1,
+    linewidth = 2
+  ) + 
   scale_y_continuous(
     breaks = 0:10 * 10^(-4),
     labels = 0:10,
-    name = "Matches per 10,000 characters"
+    name = "Matches per 10,000 characters",
+    limits = c(-0.01 * 10^-4, NA)
   ) + 
   theme_light() + 
   theme(
@@ -1315,8 +1323,14 @@ gg_nccn_cape <- ggplot(
     geom = "text", size = 4, color = pal_cape_guide[3],
     x = ymd('2022-07-01'), y = 0.9 * 10^(-4), hjust = 1,
     label = "FDA approved"
-  ) 
+  )
     
+
+ggsave(
+  gg_nccn_cape,
+  height = 4, width = 8,
+  filename = here('output', 'img', '01_panc_cape_nccn_text_parse.pdf')
+)
 
 
 ```
@@ -1359,6 +1373,10 @@ dfp_crc_biomarkers <- dft_hdrug_det %>%
     !valid_ind_exists, 
     agent %in% c("Trastuzumab", "Vemurafenib")
   ) %>%
+  group_by(record_id, agent) %>%
+  arrange(regimen_number) %>% 
+  slice(1) %>%
+  ungroup(.) %>%
   mutate(`Record [reg]` = glue("{record_id} [{regimen_number}]")) %>%
   left_join(
     .,

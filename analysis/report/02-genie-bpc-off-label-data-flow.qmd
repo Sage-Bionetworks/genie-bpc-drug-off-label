@@ -142,6 +142,8 @@ dfp_cohort_drug <- dft_flow_cohort %>%
     names_from = 'cohort',
     values_from = 'n_uses'
   )
+
+
 ```
 
 
@@ -206,6 +208,13 @@ gg_comb_left <- cowplot::plot_grid(
   ncol = 1
 )
 
+
+ggsave(
+  gg_comb_left,
+  height = 4, width = 8,
+  filename = here('output', 'img',
+                  '02_filtering_steps_cumulative_line.pdf')
+)
 ```
 
 

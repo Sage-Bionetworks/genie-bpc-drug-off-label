@@ -1056,9 +1056,10 @@ gg_panc_cape <- dft_hdrug_cohort %>%
   plot_drug_use_times(
     .,
     plot_title = "Pancreatic cohort Capecitabine uses",
-    plot_subtitle = "Blue = First approval, Magenta = Conference abstract"
+    plot_subtitle = "Blue = First approval"
   ) +
-  geom_vline(xintercept = ymd("2017-01-01"), color = "#ee3377") +
+  # Nobody had this in mind other than me :D 
+  # geom_vline(xintercept = ymd("2017-01-01"), color = "#ee3377") +
   geom_vline(xintercept = ymd("2022-12-14"), color = "#33bbee") +
   coord_cartesian(xlim = ymd(paste0(c(2006, 2023), "01-01")))
 
@@ -1308,19 +1309,19 @@ gg_nccn_cape <- ggplot(
   ) +
   geom_vline(
     xintercept = ymd('2012-01-01'),
-    color = pal_cape_guide[2]
+    color = pal_cape_guide[3]
   ) +
   annotate(
-    geom = "text", size = 4, color = pal_cape_guide[2],
+    geom = "text", size = 4, color = pal_cape_guide[3],
     x = ymd('2012-07-01'), y = 0.3 * 10^(-4), hjust = 0,
     label = "Widely recommended"
   ) +
   geom_vline( 
     xintercept = ymd('2022-12-14'), 
-    color = pal_cape_guide[3]
+    color = pal_cape_guide[2]
   ) +  
   annotate(
-    geom = "text", size = 4, color = pal_cape_guide[3],
+    geom = "text", size = 4, color = pal_cape_guide[2],
     x = ymd('2022-07-01'), y = 0.9 * 10^(-4), hjust = 1,
     label = "FDA approved"
   )

@@ -78,8 +78,8 @@ In the table below we start with the raw data, and each row is a processing step
 
 ```{r, include = T}
 dft_flow_all %>%
-  select(step, n_uses, n_drug, n_pts, prop_lost) %>%
-  mutate(prop_lost = round(prop_lost, 3)) %>%
+  select(step, n_uses, n_drug, n_pts) %>%
+  # mutate(prop_lost = round(prop_lost, 3)) %>%
   flextable(.) %>%
   theme_booktabs(.) %>%
   autofit(.)

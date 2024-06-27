@@ -109,3 +109,16 @@ plotly::ggplotly(gg)
 
 
 
+
+
+
+
+
+dft_ind_rel <- dft_ind_mapped %>%
+  mutate(date = ymd(date)) %>%
+  filter(regulator %in% "FDA" & date > "1997-01-01")
+
+dft_ind_rel %<>% 
+  filter(!is.na(mapped_cohort))
+
+dft_ind_rel %>% count(!is.na(with), sort = T)

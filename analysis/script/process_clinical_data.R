@@ -122,6 +122,11 @@ dft_clin_dat_wide %<>%
     )
   )
 
+readr::write_rds(
+  dft_clin_dat_wide,
+  here('data', 'no_ca_seq_filter', 'clin_dat_just_before_drug_removal.rds')
+)
+
 # Remove drugs with a non-standard administration route (decided Nov 21, 2023)
 dft_clin_dat_wide %<>%
   mutate(

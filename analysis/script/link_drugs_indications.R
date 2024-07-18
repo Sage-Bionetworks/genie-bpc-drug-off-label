@@ -64,12 +64,14 @@ readr::write_rds(
 
 
 
-
-
 dft_poss_app <- make_possible_indication_cohort( 
   dat_hdrug = dft_hdrug_cohort_lim,
   dat_ind = dft_ind_lim
 )
+
+
+
+
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
 dft_poss_app <- dft_poss_app %>%

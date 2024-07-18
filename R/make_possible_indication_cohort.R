@@ -8,7 +8,7 @@ make_possible_indication_cohort <- function(
     select(
       cohort, record_id, ca_seq, regimen_number, drug_number, agent,
       dmet_at_drug_start, 
-      drug_start_date_min, drug_start_date_max
+      drug_start_date_min, drug_start_date_max,
     )
   
   dat_ind %<>%

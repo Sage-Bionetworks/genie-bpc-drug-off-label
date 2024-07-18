@@ -72,15 +72,18 @@ dft_poss_app <- make_possible_indication_cohort(
 )
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
-dft_poss_app <- add_checks_possible_approvals(
-  dat_poss_app = dft_poss_app,
-  test_cols_to_include = c(
-    'test_ind_exists',
-    'test_met',
-    'test_date_definite'
-    # excluded:  'test_date_possible'
+dft_poss_app <- dft_poss_app %>%
+  add_check_met(.) %>%
+  add_check_date_definite(.) %>%
+  add_check_multiple_tests(
+    dat_poss_app = .,
+    # not strictly needed...
+    test_cols_to_include = c(
+      'test_ind_exists',
+      'test_met',
+      'test_date_definite'
+    )
   )
-)
 
 readr::write_rds(
   dft_poss_app,

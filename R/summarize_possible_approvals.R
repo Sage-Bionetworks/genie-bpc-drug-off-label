@@ -15,7 +15,9 @@ summarize_possible_approvals <- function(
       failure_type = case_when(
         !any(test_ind_exists) ~ "test_ind_exists",
         !any(test_ind_exists & test_met) ~ "test_met",
-        !any(test_ind_exists & test_met & test_date_definite) ~ "test_date_definite",
+        !any(test_ind_exists & test_met & test_monotherapy) ~ "test_monotherapy",
+        !any(test_ind_exists & test_met & test_monotherapy & 
+               test_date_definite) ~ "test_date_definite",
         T ~ NA_character_
       ),
       .groups = "drop"

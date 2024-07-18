@@ -44,6 +44,7 @@ dft_poss_app <- make_possible_indication_cohort(
 
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) %>%
+  add_check_monotherapy(.) %>%
   add_check_date_definite(.) %>%
   add_check_multiple_tests(dat_poss_app = .) # by default selects all "test" columns
 
@@ -59,6 +60,7 @@ dft_hdrug_determinations <- summarize_possible_approvals(dft_poss_app)
 levs_failure_type <- c(
   "No indications found",
   "Not metastatic at use",
+  "Not used as monotherapy",
   "Started before approval"
 )
 
@@ -67,7 +69,8 @@ dft_hdrug_determinations %<>%
     failure_type_f = case_when(
       failure_type %in% "test_ind_exists" ~ levs_failure_type[1],
       failure_type %in% "test_met" ~ levs_failure_type[2],
-      failure_type %in% "test_date_definite" ~ levs_failure_type[3],
+      failure_type %in% "test_monotherapy" ~ levs_failure_type[3],
+      failure_type %in% "test_date_definite" ~ levs_failure_type[4],
       T ~ NA_character_
     ),
     failure_type_f = factor(failure_type_f, levels = levs_failure_type)

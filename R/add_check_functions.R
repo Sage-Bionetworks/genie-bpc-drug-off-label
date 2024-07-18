@@ -15,6 +15,21 @@ add_check_met <- function(
   return(dat_poss_app)
 }
 
+add_check_monotherapy <- function(
+    dat_poss_app
+) {
+  dat_poss_app %<>%
+    mutate(
+      test_monotherapy = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "0") ~ T, # 0 = monotherapy required.
+        num_overlaps %in% 0 ~ T,
+        T ~ F
+      )
+    )
+  return(dat_poss_app)
+}
+
 
 add_check_date_definite <- function(
     dat_poss_app

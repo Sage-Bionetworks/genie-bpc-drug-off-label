@@ -20,7 +20,8 @@ make_possible_indication_cohort <- function(
       cohort = mapped_cohort,
       agent = mapped_agent,
       stage_or_status,
-      ind_date = date
+      ind_with = with,
+      ind_date = date,
     ) %>%
     mutate(test_ind_exists = T)
   

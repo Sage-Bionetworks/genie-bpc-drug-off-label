@@ -2,24 +2,18 @@ library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 # Load and create the hdrug cohort data:
-dft_cohort_cases <- readr::read_rds(
-  here('data', 'cohort', 'clin_dat_wide.rds')
+dft_hdrug_cohort <- readr::read_rds(
+  here('data', 'cohort', 'hdrug.rds')
 )
-dft_all_cases <- readr::read_rds(
-  here('data', 'no_ca_seq_filter', 'clin_dat_just_before_drug_removal.rds')
-)
-
-
-dft_hdrug_cohort <- dft_cohort_cases %>%
-  select(cohort, hdrug) %>%
-  unnest(hdrug) 
-
 
 
 
 
 # The list of all cases hasn't been processed into an hdrug dataset yet, so we 
 #   need to repeat some steps (skipping removals):
+dft_all_cases <- readr::read_rds(
+  here('data', 'no_ca_seq_filter', 'clin_dat_just_before_drug_removal.rds')
+)
 dft_all_cases %<>%
   mutate(
     # hreg = harmonized regimen data.
@@ -91,5 +85,54 @@ dft_all_cases %<>%
 dft_hdrug_all <- dft_all_cases %>%
   select(cohort, hdrug) %>%
   unnest(hdrug) 
+
+dft_hdrug_cohort %<>% add_dob_int_hdrug(.)
+dft_hdrug_all %<>% add_dob_int_hdrug(.)
+  
+# One example where we know overlaps exist, and it's beyond the cohort ones.
+# get_overlaps_one_row(
+#   row_to_check = (
+#     dft_hdrug_cohort %>%
+#        filter(record_id %in% "GENIE-MSK-P-0007135") %>%
+#        slice(4)
+#     ),
+#   dat_overlaps = dft_hdrug_all
+# )
+
+# This takes quite a while to run.  That's ok, we're not in a huge hurry for
+#   something we'll be doing once.
+# A solution where you join then filter is probably going to be faster.
+list_overlaps <- dft_hdrug_cohort %>%
+  group_by(row_number()) %>%
+  group_nest(., .key = "drug_use_row") %>%
+  pull("drug_use_row") %>%
+  purrr::map(
+    .x = .,
+    .f = \(z) {
+      get_overlaps_one_row(
+        row_to_check = z,
+        dat_overlaps = dft_hdrug_all
+      )
+    }
+  )
+
+dft_hdrug_cohort %<>%
+  mutate(
+    drug_overlaps = list_overlaps,
+    num_overlaps = purrr::map_dbl(
+      .x = drug_overlaps,
+      .f = length
+    )
+  )
+
+readr::write_rds(
+  dft_hdrug_cohort,
+  here('data', 'cohort', 'hdrug_with_conmeds.rds')
+)
+
+
+  
+
+
 
 

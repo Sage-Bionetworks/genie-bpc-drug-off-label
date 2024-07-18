@@ -10,7 +10,9 @@ make_possible_indication_cohort <- function(
       dmet_at_drug_start, 
       drug_start_date_min, drug_start_date_max,
       dx_drug_start_int,
-      dx_drug_end_or_lastadm_int
+      dx_drug_end_or_lastadm_int,
+      drug_overlaps,
+      num_overlaps
     )
   
   dat_ind %<>%

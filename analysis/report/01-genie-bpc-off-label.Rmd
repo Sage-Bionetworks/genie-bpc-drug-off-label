@@ -996,15 +996,18 @@ gg_comb
 dft_poss_app %>% glimpse
 
 # We just re-add the checks:
-dft_hdrug_det_anti_conserv <- add_checks_possible_approvals(
-  dat_poss_app = dft_poss_app,
-  test_cols_to_include = c(
-    'test_ind_exists',
-    'test_met',
-    'test_date_possible'
-    # excluded:  'test_date_possible'
-  )
-) %>% 
+dft_hdrug_det_anti_conserv <- dft_poss_app %>%
+  add_check_met(.) %>%
+  add_check_date_possible(.) %>%
+  add_check_multiple_tests(
+    dat_poss_app = .,
+    # not strictly needed...
+    test_cols_to_include = c(
+      'test_ind_exists',
+      'test_met',
+      'test_date_possible'
+    )
+  ) %>%
   summarize_possible_approvals_no_fail_type(.)
 
 dft_date_compare <- left_join(

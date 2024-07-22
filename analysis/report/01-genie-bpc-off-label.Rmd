@@ -149,6 +149,10 @@ dft_nccn_sum <- readr::read_rds(
 dft_gen_mark <- readr::read_rds(
   here('data', 'no_ca_seq_filter', 'genomic_sum.rds')
 )
+
+dft_hdrug_conmed <- readr::read_rds(
+  here('data', 'cohort', 'hdrug_with_conmeds.rds')
+)
 ```
 
 
@@ -740,14 +744,16 @@ dfp_olu_cohort_type <- dft_hdrug_det %>%
       as.character(off_label_type), 
       "(on label)"
     )
-  ) %>%
+  ) 
+
+dfp_olu_cohort_type %<>%
   flextable(.) %>%
   autofit(.) %>%
-  flextable::color(i = 4, color = "gray50")
+  flextable::color(i = nrow(dfp_olu_cohort_type), color = "gray50")
   
 ```
 
-### R3.2 OLU Overview
+### *R3.2 OLU Overview
 
 By cohort (denominators show the number of total drug uses included):
 
@@ -822,7 +828,7 @@ dt_off_label <- dft_off_label_uses %>%
   dt_wrapper(.)
 ```
 
-### R3.3 OLU table, sortable
+### *R3.3 OLU table, sortable
 
 The following table shows rows grouped by {cohort, agent, off_label_type}.  For example, a row might show the number of off label uses of capecitabine in the pancreatic cohort, which were due to using a drug before the approval date.
 
@@ -1339,7 +1345,7 @@ ggsave(
 
 ```
 
-### *R4.5 Guidelines + Capecitabine
+### R4.5 Guidelines + Capecitabine
 
 *Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This took care of the majority of work needed to get here, greatly appreciated.
 
@@ -1394,7 +1400,7 @@ dfp_crc_biomarkers <- dft_hdrug_det %>%
 ```
 
 
-### *R4.6 Biomarker driven use
+### R4.6 Biomarker driven use
 
 We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a genomic alteration in BRAF or ERBB2 which could explain the decision to administer these drugs.  The following table provides a flag for each one, ignoring timing entirely.  In other words, a BRAF mutation or amplification (copy number alteration) at any time would result in `TRUE`.  `Record [reg]` is the record ID and regimen number.
 
@@ -1465,7 +1471,7 @@ dft_cape_comp_sum <- dft_cape_compliments %>%
 
 
 
-### *R4.7 Drugs given with Capecitabine
+### R4.7 Drugs given with Capecitabine
 
 This is a generalized answer to the question "Was Capecitabine given with Erlotinib often in the pancreatic cohort?".
 
@@ -1489,6 +1495,121 @@ dft_cape_comp_sum %>%
 
 
 
+```{r}
+dft_non_mono <- dft_hdrug_determinations %>%
+  filter(failure_type %in% "test_monotherapy") %>%
+  select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
+  left_join(
+    .,
+    dft_hdrug_conmed,
+    by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
+  ) %>%
+  select(cohort, record_id, ca_seq, regimen_number, drug_number, agent, drug_overlaps) %>%
+  mutate(
+    drug_overlaps = purrr::map_chr(
+      .x = drug_overlaps,
+      .f = \(z) paste(z, collapse = ",")
+    )
+  )
+
+dft_non_mono %>%
+  count(cohort, agent, drug_overlaps)
+
+```
+
+### *R4.8 Monotherapy violations
+
+Here are drug uses which were off label due to monotherapy requirement violations:
+
+```{r}
+#| include: true
+dft_non_mono %>%
+  count(cohort, agent, drug_overlaps, name = "cases") %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+*Notes:*
+
+- We consider all drugs when looking for overlaps.  For example oxaliplatin is excluded based on approval date, but we bring it back in when looking at whether capecitabine was used as monotherapy.
+- If we want to keep pushing on the `with` column we need to make this move of bringing in all drugs (for example, cisplatin is a common `with` entry).
+
+
+
+
+
+
+
+```{r}
+agents_included <- unique(dft_hdrug_determinations$agent)
+
+dft_ind_relevant <- dft_ind_lim %>% 
+  filter(regulator %in% "FDA") %>%
+  filter(!is.na(mapped_cohort) & mapped_agent %in% agents_included) 
+
+dft_ind_relevant <- dft_hdrug_determinations %>%
+  count(cohort, agent, name = "n_uses") %>%
+  rename(mapped_cohort = cohort, mapped_agent = agent) %>%
+  left_join(
+    dft_ind_relevant, ., by = c('mapped_cohort', 'mapped_agent')
+  )
+
+dft_with_expansions <- dft_ind_relevant %>% 
+  filter(!is.na(with) & !(with %in% "not applicable")) %>% 
+  group_by(with) %>%
+  summarize(
+    rough_relevance = sum(n_uses),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(rough_relevance))
+
+
+dft_biomarker_expansions <- dft_ind_relevant %>% 
+  filter(!is.na(biomarker) & !(biomarker %in% "not applicable")) %>% 
+  group_by(biomarker) %>%
+  summarize(
+    rough_relevance = sum(n_uses),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(rough_relevance))
+
+  
+```
+
+### *R4.9 "With" expansions
+
+`with` from the indications sheet shows drugs that must be taken with the indication (or `0` for monotherapy).  In order to figure out what the most relevant entries are, we assign one point for each indication corresponding to one drug use (representing an indication we can evaluate).  This is called `rough_relevance` below:
+
+```{r}
+#| include: true
+dft_with_expansions %>%
+  dt_wrapper(.)
+```
+
+*Notes:*
+
+- We will define taking a drug "with" another one as a definite overlap of one day or more.
+- `rough_relevance` is rough, but it at least gets us to focus on drugs that are in our inclusion criteria and are used quite a few times.
+
+
+
+
+### *R4.10 Biomarker expansions
+
+The same table as 4.9 above, but for biomarkers:
+
+```{r}
+#| include: true
+dft_biomarker_expansions %>%
+  dt_wrapper(.)
+```
+
+*Notes:*
+
+- Breast cancer markers are an obvious first step.  To deal with unknowns it may make sense to only flag people who are confirmed to be NOT in the correct biomarker category.
+- EGFR exon 19 makes sense d/t general interest.
+
+
 
 
 
@@ -1498,7 +1619,7 @@ The following table shows a few relevant columns from the `indications.csv` shee
 
 ```{r, include = T}
 dft_ind_mapped %>% 
-  select(component, regulator, date, condition, note, 
+  select(component, regulator, date, condition, with,
          context, stage_or_status) %>%
   dt_wrapper(.)
 ```

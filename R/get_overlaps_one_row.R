@@ -12,11 +12,19 @@ get_overlaps_one_row <- function(
     cli_abort("row_to_check must have dob_drug_start_int and dob_drug_end_or_lastadm_int columns")
   }
   
+  # Get drugs from this person, except the exact one in row_to_check.
   dat_overlaps %<>%
     filter(
       cohort %in% row_to_check$cohort,
       record_id %in% row_to_check$record_id
+    ) %>%
+    filter(
+      !(
+        regimen_number %in% row_to_check$regimen_number &
+          drug_number %in% row_to_check$drug_number 
+      )
     )
+  # another way to do this would be drug name, which we'll check on the back end.
   
   dat_overlaps %<>%
     # as a shorthand I'll use a1 and a2 to indicate the start and end 

@@ -86,6 +86,8 @@ dft_hdrug_all <- dft_all_cases %>%
   select(cohort, hdrug) %>%
   unnest(hdrug) 
 
+dft_hdrug_all %<>% fix_cohort_names(.)
+
 dft_hdrug_cohort %<>% add_dob_int_hdrug(.)
 dft_hdrug_all %<>% add_dob_int_hdrug(.)
   
@@ -93,8 +95,8 @@ dft_hdrug_all %<>% add_dob_int_hdrug(.)
 # get_overlaps_one_row(
 #   row_to_check = (
 #     dft_hdrug_cohort %>%
-#        filter(record_id %in% "GENIE-MSK-P-0007135") %>%
-#        slice(4)
+#        filter(record_id %in% "GENIE-DFCI-008411") %>%
+#        slice(2)
 #     ),
 #   dat_overlaps = dft_hdrug_all
 # )
@@ -119,6 +121,10 @@ list_overlaps <- dft_hdrug_cohort %>%
 dft_hdrug_cohort %<>%
   mutate(
     drug_overlaps = list_overlaps,
+    drug_overlaps_vec = purrr::map_chr(
+      .x = drug_overlaps,
+      .f = \(z) paste(z, collapse = ", ")
+    ),
     num_overlaps = purrr::map_dbl(
       .x = drug_overlaps,
       .f = length

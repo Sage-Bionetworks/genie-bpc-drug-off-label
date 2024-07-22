@@ -44,8 +44,8 @@ dft_poss_app <- make_possible_indication_cohort(
 
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) %>%
-  add_check_monotherapy(.) %>%
   add_check_date_definite(.) %>%
+  add_check_monotherapy(.) %>%
   add_check_multiple_tests(dat_poss_app = .) # by default selects all "test" columns
 
 
@@ -54,14 +54,24 @@ readr::write_rds(
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
 
+# searching for cases that SHOULD fail:
+# dft_poss_app %>%
+#   group_by(record_id, regimen_number, drug_number) %>%
+#   mutate(
+#     .all_ind_and_met_ok = any(test_ind_exists & test_met),
+#     .mono_off = !any(test_monotherapy)
+#   ) %>%
+#   filter(.all_ind_and_met_ok & .mono_off)
 
-dft_hdrug_determinations <- summarize_possible_approvals(dft_poss_app) 
+dft_hdrug_determinations <- summarize_possible_approvals_2(dft_poss_app) 
+
+tabyl(dft_hdrug_determinations, failure_type, cohort)
 
 levs_failure_type <- c(
   "No indications found",
   "Not metastatic at use",
-  "Not used as monotherapy",
-  "Started before approval"
+  "Started before approval",
+  "Not used as monotherapy"
 )
 
 dft_hdrug_determinations %<>%
@@ -69,8 +79,8 @@ dft_hdrug_determinations %<>%
     failure_type_f = case_when(
       failure_type %in% "test_ind_exists" ~ levs_failure_type[1],
       failure_type %in% "test_met" ~ levs_failure_type[2],
-      failure_type %in% "test_monotherapy" ~ levs_failure_type[3],
-      failure_type %in% "test_date_definite" ~ levs_failure_type[4],
+      failure_type %in% "test_date_definite" ~ levs_failure_type[3],
+      failure_type %in% "test_monotherapy" ~ levs_failure_type[4],
       T ~ NA_character_
     ),
     failure_type_f = factor(failure_type_f, levels = levs_failure_type)

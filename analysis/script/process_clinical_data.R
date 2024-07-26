@@ -20,10 +20,6 @@ dft_clin_dat <- tibble(
   filter(cohort %in% c("BLADDER", 'BrCa', 'CRC', 'NSCLC', 'PANC', 'Prostate'))
 
 
-# Run for one cohort example:
-# folder_load_helper(slice(dft_clin_dat,1)$cohort_path,
-#                    dn = dft_data_names)
-
 dft_clin_dat %<>%
   mutate(
     loaded_data = purrr::map(

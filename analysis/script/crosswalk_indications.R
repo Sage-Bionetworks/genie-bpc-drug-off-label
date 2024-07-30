@@ -14,6 +14,33 @@ dft_hdrug_cohort <- dft_cohort_cases %>%
   select(cohort, hdrug) %>%
   unnest(hdrug)
 
+
+
+# Fix some mistakes we noticed in the indications data.
+# General issues:  OR vs | - both are used
+# Brackets are sometimes used, sometimes not.
+dft_ind %<>%
+  mutate(
+    with = case_when(
+      # capital version was just most used:
+      with %in% c("chemotherapy", "Chemotherapy") ~ "Chemotherapy",
+      with %in% "Carboplatin AND Palictaxel" ~ 
+                "Carboplatin AND Paclitaxel",
+      with %in% "Carpoplatin AND (Paclitaxel OR nab-Paclitaxel)" ~
+                "Carboplatin AND (Paclitaxel OR nab-Paclitaxel)",
+      with %in% c("Aromatase inhibitor OR Tamoxifen",
+                  "Tamoxifen|Aromatase inhibitor") ~
+        "Aromatase inhibitor OR Tamoxifen", # OR is slightly more common than |
+      with %in% c("Carboplatin and Pemetrexed") ~ "Carboplatin AND Pemetrexed",
+      # This isn't strictly an error, but its inconsistent with the general
+      #   convention to capitalize the first word.
+      with %in% "trastuzumab" ~ "Trastuzumab",
+      T ~ with
+    )
+  )
+      
+  
+
 # Notes on this:
 # - I did not include pancreatic NET as neuroendocrine tumors of the pancreas
 #.   didn't appear in the oncotree codes for the data guide.
@@ -206,7 +233,7 @@ dft_ind_limited <- dft_ind_mapped %>%
 
 dft_ind_limited %<>%
   filter(!is.na(component)) %>%
-  filter(!(component %in% "NONE")) %>% # pending decision here
+  filter(!(component %in% "NONE")) %>%
   filter(regulator %in% "FDA")
 
 readr::write_rds(

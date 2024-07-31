@@ -43,9 +43,9 @@ dft_poss_app <- make_possible_indication_cohort(
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
 dft_poss_app <- dft_poss_app %>%
-  add_check_met(.) %>%
-  add_check_date_definite(.) %>%
-  add_check_monotherapy(.) 
+  add_check_met(.) 
+ 
+dft_poss_app %<>% add_check_monotherapy(.) 
 
 
 # Should move this over to the clinical processing file
@@ -333,18 +333,7 @@ dft_poss_app %<>%
 
 
 
-  
-
-# dft_poss_app %>%
-#   mutate(
-#     .has_drug = map_lgl(
-#       .x = drug_overlaps,
-#       .f = \(z) any(z %in% "Cisplatin")
-#     )
-#   ) %>%
-#   filter(.has_drug) %>% 
-#   sample_n(1000) %>%
-#   View(.)
+dft_poss_app %<>% add_check_date_definite(.)
   
 dft_poss_app %<>% add_check_multiple_tests(dat_poss_app = .) # by default selects all "test" columns
 
@@ -354,35 +343,25 @@ readr::write_rds(
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
 
-# searching for cases that SHOULD fail:
-# dft_poss_app %>%
-#   group_by(record_id, regimen_number, drug_number) %>%
-#   mutate(
-#     .all_ind_and_met_ok = any(test_ind_exists & test_met),
-#     .mono_off = !any(test_monotherapy)
-#   ) %>%
-#   filter(.all_ind_and_met_ok & .mono_off)
-
 dft_hdrug_determinations <- summarize_possible_approvals_2(dft_poss_app)
 
-tabyl(dft_hdrug_determinations, cohort, valid_ind_exists)
-tabyl(dft_hdrug_determinations, failure_type, cohort) %>%
-  View(.)
+# tabyl(dft_hdrug_determinations, cohort, valid_ind_exists)
+# tabyl(dft_hdrug_determinations, failure_type, cohort) %>%
+#   View(.)
 
 levs_failure_type <- c(
   "No indications found",
-  "Not metastatic at use",
-  "Started before approval",
-  "Not used as monotherapy"
+  "Specific conditions not met",
+  "Started before approval"
 )
 
 dft_hdrug_determinations %<>%
   mutate(
     failure_type_f = case_when(
       failure_type %in% "test_ind_exists" ~ levs_failure_type[1],
-      failure_type %in% "test_met" ~ levs_failure_type[2],
       failure_type %in% "test_date_definite" ~ levs_failure_type[3],
-      failure_type %in% "test_monotherapy" ~ levs_failure_type[4],
+      # All other types are lumped:
+      !is.na(failure_type) ~ levs_failure_type[2],
       T ~ NA_character_
     ),
     failure_type_f = factor(failure_type_f, levels = levs_failure_type)

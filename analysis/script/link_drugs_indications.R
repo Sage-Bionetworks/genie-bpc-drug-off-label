@@ -39,13 +39,47 @@ dft_poss_app <- make_possible_indication_cohort(
   dat_ind = dft_ind_lim
 )
 
+# Step test is a log of the data after each test was added.
+# Lots of duplication, but don't worry, we'll parse it down.
+dft_step <- tibble(
+  step = "test_ind_exists",
+  dat = list(dft_poss_app)
+)
+
+# A quick helper to add step logging.
+add_step <- function(
+    dat_poss_app,
+    step_name = NULL,
+    dat_step = dft_step
+) {
+  
+  # default step name is the last column name starting with "test"
+  if (is.null(step_name)) {
+    col <- names(dat_poss_app)
+    col <- col[str_detect(col, "^test")]
+    print(col)
+    step_name <- col[length(col)]
+    
+  }
+  
+  dat_step %>%
+    add_row(
+      step = step_name,
+      dat = list(dat_poss_app)
+    )
+}
+                     
+  
+
 
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) 
+dft_step <- add_step(dft_poss_app)
  
 dft_poss_app %<>% add_check_monotherapy(.) 
+dft_step <- add_step(dft_poss_app)
 
 
 # Should move this over to the clinical processing file
@@ -88,6 +122,7 @@ dft_poss_app %<>%
     dat_poss_app = .,
     with_req = "Letrozole"
   )
+
 
 dft_poss_app %<>%
   add_check_with_simple(

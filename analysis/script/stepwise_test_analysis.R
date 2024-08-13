@@ -6,6 +6,8 @@
 library(purrr); library(here); library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
+dir_output <- here('data', 'linked_approvals', 'stepwise')
+
 dft_poss_app <- readr::read_rds(
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
@@ -70,7 +72,7 @@ dft_step <- bind_rows(
 
 readr::write_rds(
   x = dft_step,
-  file = here('data', 'linked_approvals', 'test_stepwise.rds')
+  file = here(dir_output, 'stepwise_dat.rds')
 )
 
 # We will nest the data and do an anti-join.  This gets us more
@@ -111,7 +113,7 @@ dft_off_label %<>%
 
 readr::write_rds(
   x = dft_off_label,
-  file = here('data', 'linked_approvals', 'stepwise_new_off_label.rds')
+  file = here(dir_output, 'stepwise_new_off_label.rds')
 )
 
   
@@ -126,18 +128,76 @@ dft_step_cohort <- dft_step %>%
     .groups = "drop"
   ) 
 
-ggplot(
+readr::write_rds(
+  x = dft_step_cohort,
+  file = here(dir_output, 'step_sum_cohort.rds')
+)
+
+
+gg_step_cohort_n <- ggplot(
+  data = mutate(dft_step_cohort, step = fct_rev(step)),
+  aes(y = step, x = n_off_label, color = cohort, group = cohort)
+) + 
+  geom_line() +
+  theme_bw() +
+  theme(
+    strip.text = element_text(hjust = 0),
+    legend.position = "bottom",
+    axis.text.y = element_text(hjust = 1)
+  ) + 
+  scale_x_continuous(
+    expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
+    limits = c(0, NA),
+    name = "Number off label"
+  ) +
+  scale_color_vibrant() +
+  labs(
+    y = paste0(
+      "←last", 
+      paste(rep(" ", 10), collapse = ""), 
+      "Step", 
+      paste(rep(" ", 10), collapse = ""),
+      "first→"
+    )
+  )
+
+readr::write_rds(
+  gg_step_cohort_n,
+  here(dir_output, 'gg_step_cohort_n.rds')
+)
+
+gg_step_cohort_prop <- ggplot(
   data = mutate(dft_step_cohort, step = fct_rev(step)),
   aes(y = step, x = prop_off_label, color = cohort, group = cohort)
 ) + 
   geom_line() +
-  theme_minimal() +
+  theme_bw() +
   theme(
-    axis.text.y = element_text(hjust = 0)
+    strip.text = element_text(hjust = 0),
+    legend.position = "bottom",
+    axis.text.y = element_text(hjust = 1)
+  ) + 
+  scale_x_continuous(
+    expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
+    limits = c(0, NA),
+    breaks = seq(0, 1, by = 0.2),
+    labels = label_percent(),
+    name = "Prop off label"
+  ) +
+  scale_color_vibrant() +
+  labs(
+    y = paste0(
+      "←last", 
+      paste(rep(" ", 10), collapse = ""), 
+      "Step", 
+      paste(rep(" ", 10), collapse = ""),
+      "first→"
+    )
   )
 
-# Todo: 
-#   1. Fix the graph above to do proportions and counts (two panes)
-#   2. Fix the script to declare then iterate on simple tests.
-#.  3. Clean up the report, remove some of the front matter junk.
-#   4. Incorporate some of this into the report.
+readr::write_rds(
+  gg_step_cohort_prop,
+  here(dir_output, 'gg_step_cohort_prop.rds')
+)
+  
+  

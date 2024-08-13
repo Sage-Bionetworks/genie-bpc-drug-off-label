@@ -10,4 +10,5 @@ fs::dir_create(here('output', 'img'))
 fs::dir_create(here('data', 'no_ca_seq_filter'))
 fs::dir_create(here('data', 'warner_materials'))
 fs::dir_create(here('data', 'linked_approvals'))
+fs::dir_create(here('data', 'linked_approvals', 'stepwise'))
 

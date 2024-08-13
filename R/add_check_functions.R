@@ -38,12 +38,16 @@ add_check_monotherapy <- function(
 add_check_with_simple <- function(
     dat_poss_app,
     with_req,
-    agent_req = with_req,
+    agent_req = NULL,
     test_name = NULL,
     verbose_results = T
 ) {
   if (!any(dat_poss_app$ind_with %in% with_req)) {
     cli_warn("There are no rows with ind_with = {with_req} - typo?")
+  }
+  
+  if (is.null(agent_req)) {
+    agent_req = with_req
   }
   
   if (is.null(test_name)) {

@@ -39,48 +39,12 @@ dft_poss_app <- make_possible_indication_cohort(
   dat_ind = dft_ind_lim
 )
 
-# Step test is a log of the data after each test was added.
-# Lots of duplication, but don't worry, we'll parse it down.
-dft_step <- tibble(
-  step = "test_ind_exists",
-  dat = list(dft_poss_app)
-)
-
-# A quick helper to add step logging.
-add_step <- function(
-    dat_poss_app,
-    step_name = NULL,
-    dat_step = dft_step
-) {
-  
-  # default step name is the last column name starting with "test"
-  if (is.null(step_name)) {
-    col <- names(dat_poss_app)
-    col <- col[str_detect(col, "^test")]
-    print(col)
-    step_name <- col[length(col)]
-    
-  }
-  
-  dat_step %>%
-    add_row(
-      step = step_name,
-      dat = list(dat_poss_app)
-    )
-}
-                     
-  
-
-
 # Leaves open the possibility to add more indications based on TMB, etc (not cohort)
 
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) 
-dft_step <- add_step(dft_poss_app)
  
 dft_poss_app %<>% add_check_monotherapy(.) 
-dft_step <- add_step(dft_poss_app)
-
 
 # Should move this over to the clinical processing file
 # unique_drugs_in_overlap <- sort(unique(purrr::reduce(dft_poss_app$drug_overlaps, c)))
@@ -115,6 +79,7 @@ dft_poss_app %<>%
     dat_poss_app = .,
     with_req = "Gemcitabine",
     agent_req = "Gemcitabine Hydrochloride",
+    test_name = "test_with_gemcitabine",
   )
 
 dft_poss_app %<>%
@@ -158,7 +123,8 @@ dft_poss_app %<>%
   add_check_with_simple(
     dat_poss_app = .,
     with_req = "Irinotecan",
-    agent_req = "Irinotecan Hydrochloride" # Add Irinotecan liposome?
+    agent_req = "Irinotecan Hydrochloride", # Add Irinotecan liposome?
+    test_name = "test_with_irinotecan"
   )
 
 dft_poss_app %<>%
@@ -183,7 +149,8 @@ dft_poss_app %<>%
   add_check_with_simple(
     dat_poss_app = .,
     with_req = "Erlotinib",
-    agent_req = "Erlotinib Hydrochloride"
+    agent_req = "Erlotinib Hydrochloride",
+    test_name = "test_with_erlotinib"
   )
 
 dft_poss_app %<>%
@@ -348,7 +315,7 @@ dft_poss_app %<>%
   )
 
 
-# Example to chekc this is working:
+# Example to check this is working:
 # dft_poss_app %>%
 #   filter(ind_with %in% "FOLFOX") %>%
 #   arrange(test_with_folfox) %>%
@@ -367,9 +334,8 @@ dft_poss_app %<>%
 
 
 
-
-dft_poss_app %<>% add_check_date_definite(.)
   
+dft_poss_app %<>% add_check_date_definite(.) 
 dft_poss_app %<>% add_check_multiple_tests(dat_poss_app = .) # by default selects all "test" columns
 
 

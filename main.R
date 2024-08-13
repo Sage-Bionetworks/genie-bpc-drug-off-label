@@ -14,6 +14,7 @@ source(here('analysis', 'script', 'process_genomic_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
 source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))
+source(here('analysis', 'script', 'stepwise_test_analysis.R'))
 source(here('analysis', 'script', 'scrape_guidelines.R'))
 
 rmarkdown::render(

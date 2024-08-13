@@ -46,293 +46,31 @@ dft_poss_app <- dft_poss_app %>%
  
 dft_poss_app %<>% add_check_monotherapy(.) 
 
-# Should move this over to the clinical processing file
-# unique_drugs_in_overlap <- sort(unique(purrr::reduce(dft_poss_app$drug_overlaps, c)))
+dft_simple_with_tests <- readr::read_rds(
+  here('data', 'linked_approvals', 'simple_with_tests.rds')
+)
 
+# To iterate more easily we'll make the other columns lists:
+dft_simple_with_tests %<>%
+  mutate(
+    with_req = as.list(with_req),
+    test_name = as.list(test_name),
+    test_name = purrr::map(
+      .x = test_name,
+      .f = \(z) if(is.na(z)) return(NULL) else return(z)
+    )
+  )
 
 # Working tip: add_check_with_simple() has a verbose_results setting to print
-#   some checks.  Use this in line-by-line runs to look for typos.
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "5-FU-based regimen",
-    agent_req = "Fluorouracil"
+#   some checks.  Turn this on to check typos or off for quieter work. 
+for (k in seq_len(nrow(dft_simple_with_tests))) {
+  dft_poss_app <- add_check_with_simple(
+    dat_poss_app = dft_poss_app,
+    with_req = pull(dft_simple_with_tests, with_req)[[k]],
+    agent_req = pull(dft_simple_with_tests, agent_req)[[k]],
+    test_name = pull(dft_simple_with_tests, test_name)[[k]]
   )
-
-# agent_req defaults to with_req
-# test_name defaults to test_with_{agent_req}
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Cisplatin"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Docetaxel",
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Gemcitabine",
-    agent_req = "Gemcitabine Hydrochloride",
-    test_name = "test_with_gemcitabine",
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Letrozole"
-  )
-
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Fulvestrant"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Abemaciclib"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Palbociclib"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Ribociclib"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Ipilimumab"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Irinotecan",
-    agent_req = "Irinotecan Hydrochloride", # Add Irinotecan liposome?
-    test_name = "test_with_irinotecan"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Capecitabine",
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Bevacizumab",
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Exemestane",
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Erlotinib",
-    agent_req = "Erlotinib Hydrochloride",
-    test_name = "test_with_erlotinib"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Carboplatin"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Dabrafenib"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Trametinib"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Nivolumab"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Pembrolizumab"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Cetuximab"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Encorafenib"
-  )
-
-
-
-# add_check_with_simple can also handle clauses that only have AND operators:
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Doxorubicin AND Cyclophosphamide AND Paclitaxel",
-    agent_req = c(
-      "Doxorubicin Hydrochloride",
-      "Cyclophosphamide",
-      "Paclitaxel"
-    ),
-    # For these combo regimens I'm going to give them new names because
-    #   the auto generated variable names get burdensome long.
-    test_name = "test_with_dox_cyclo_pac"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Carboplatin AND Pembrolizumab",
-    agent_req = c(
-      "Carboplatin",
-      "Pembrolizumab"
-    ),
-    test_name = "test_with_carbo_pembro"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Carboplatin AND Paclitaxel",
-    agent_req = c(
-      "Carboplatin",
-      "Paclitaxel"
-    ),
-    test_name = "test_with_carbotaxol"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Carboplatin AND Pemetrexed",
-    agent_req = c(
-      "Carboplatin",
-      "Pemetrexed"
-    ),
-    test_name = "test_with_carbopem"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "FOLFIRI",
-    agent_req = c(
-      "Leucovorin Calcium",
-      "Fluorouracil",
-      "Irinotecan Hydrochloride"
-    ),
-    test_name = "test_with_folfiri"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "FOLFOX",
-    agent_req = c(
-      "Leucovorin Calcium",
-      "Fluorouracil",
-      "Oxaliplatin"
-    ),
-    test_name = "test_with_folfox"
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Fluorouracil AND Folinic acid",
-    agent_req = c(
-      "Fluorouracil",
-      "Leucovorin Calcium"
-    ),
-    test_name = "test_with_folf" # fol = folinic acid = leucovorin
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Paclitaxel, nanoparticle albumin-bound AND Carboplatin",
-    agent_req = c(
-      "Nabpaclitaxel",
-      "Carboplatin"
-    ),
-    test_name = "test_with_carbo_nabpac" 
-  )
-
-# We can't check prednisone in BPC (not collected) so we just do Abi here.
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Abiraterone AND (Prednisone|Prednisolone)",
-    agent_req = c(
-      "Abiraterone Acetate"
-    ),
-    test_name = "test_with_abiraterone" 
-  )
-
-dft_poss_app %<>%
-  add_check_with_simple(
-    dat_poss_app = .,
-    with_req = "Cisplatin AND Gemcitabine",
-    agent_req = c(
-      "Cisplatin",
-      "Gemcitabine Hydrochloride"
-    ),
-    test_name = "test_with_gem_cis" 
-  )
-
-
-# Example to check this is working:
-# dft_poss_app %>%
-#   filter(ind_with %in% "FOLFOX") %>%
-#   arrange(test_with_folfox) %>%
-#   mutate(drug_over_str = purrr::map_chr(
-#     .x = drug_overlaps,
-#     .f = \(z) paste(z, collapse = ",")
-#   )) %>%
-#   select(drug_over_str, test_with_folfox) %>%
-#   View(.)
-
-
-
-
-
-
-
-
+}
 
   
 dft_poss_app %<>% add_check_date_definite(.) 

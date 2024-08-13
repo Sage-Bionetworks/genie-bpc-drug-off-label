@@ -198,13 +198,4 @@ readr::write_rds(
   file = here('data', 'linked_approvals', 'simple_with_tests.rds')
 )
 
-# # other columns need to be lists as well.
-# dft_simple_with_tests %<>%
-#   mutate(
-#     with_req = as.list(with_req),
-#     test_name = as.list(test_name),
-#     test_name = purrr::map(
-#       .x = test_name,
-#       .f = \(z) if(is.na(z)) return(NULL) else return(z)
-#     )
-#   )
+

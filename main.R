@@ -13,6 +13,8 @@ source(here('analysis', 'script', 'find_concomitant_drugs.R')) # takes a minute.
 source(here('analysis', 'script', 'process_genomic_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
 source(here('analysis', 'script', 'derive_first_approvals.R'))
+
+source(here('analysis', 'script', 'declare_with_tests.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))
 source(here('analysis', 'script', 'stepwise_test_analysis.R'))
 source(here('analysis', 'script', 'scrape_guidelines.R'))

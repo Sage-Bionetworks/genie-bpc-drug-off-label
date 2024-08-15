@@ -1,5 +1,5 @@
 ---
-title: "Off-Label & Off-Guideline Project"
+title: "[3] Off-Label & Off-Guideline Project"
 subtitle: "Main results, explorations"
 author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
@@ -112,6 +112,17 @@ dft_hdrug_conmed <- readr::read_rds(
 )
 ```
 
+
+
+```{r}
+gg_step_cohort_n <- readr::read_rds(
+  here('data', 'linked_approvals', 'stepwise', 'gg_step_cohort_n.rds')
+)
+gg_step_cohort_prop <- readr::read_rds(
+  here('data', 'linked_approvals', 'stepwise', 'gg_step_cohort_prop.rds')
+)
+# actually don't need any of the other stepwise stuff just yet.
+```
 
 
 
@@ -424,8 +435,39 @@ dt_off_label_first_drug
 ```
 
 
+### R3.5 Expanded "Specific condidtions not met"
+
+"Specific conditions not met" above is a catch-all for dozens of tests.  It's everything except having the correct cancer type (checked first) and having the correct date (checked last).  Things that we check include:
+
+- Whether the patient is metastatic, iff required for the drug indication.
+- Whether any required concomitant meds were used (including monotherapy, `test_with_ nothing`)
+- *In progress* whether they met clinical conditions (HER2+, ALK mutation, etc.).
+
+The following graph shows the number of cases considered off label as we add each test (from top to bottom).  While the test order does matter, a large horizontal jump when a test is added indicates that a valid indication could no longer be found for many people when we added that check.  That gives us a sign of something to pursue further below.
+
+```{r}
+#| include: true
+gg_step_cohort_n
+```
 
 
+**Notes:**
+
+A few (other than the first and last check) that jump out to me:
+
+- Breast: with exemestane.
+- Pancreas: with gemcitabine, with FOLF.
+- NSCLC: with carboplatin and with cisplatin, with dabrafenib.
+- CRC: with folfiri (weak).
+- Prostate: metastatic.
+
+
+The same graph can be shown using proportions too, just for completeness:
+
+```{r}
+#| include: true
+gg_step_cohort_prop
+```
 
 
 
@@ -1025,7 +1067,7 @@ dft_cape_comp_sum <- dft_cape_compliments %>%
 
 ### R4.7 Drugs given with Capecitabine
 
-This is a generalized answer to the question "Was Capecitabine given with Erlotinib often in the pancreatic cohort?".
+This is a generalized answer to the question "Was Capecitabine given with Erlotinib often in the pancreatic cohort?"
 
 The following table lists the drugs which accompany regimens where Capecitabine was given.  If Capecitabine was the only drug used in the regimen we just note "(monotherapy)". The counts are in strata defined by whether the use of capecitabine was valid in that regimen, and which cohort the person belongs to.
 
@@ -1048,53 +1090,6 @@ dft_cape_comp_sum %>%
 
 
 
-
-
-
-
-
-```{r}
-#| include: true
-#| eval: false
-agents_included <- unique(dft_hdrug_det$agent)
-
-dft_ind_relevant <- dft_ind_mapped %>% 
-  filter(regulator %in% "FDA") %>%
-  filter(!is.na(mapped_cohort) & mapped_agent %in% agents_included) 
-
-dft_ind_relevant <- dft_hdrug_det %>%
-  count(cohort, agent, name = "n_uses") %>%
-  rename(mapped_cohort = cohort, mapped_agent = agent) %>%
-  left_join(
-    dft_ind_relevant, ., by = c('mapped_cohort', 'mapped_agent')
-  )
-
-dft_with_expansions <- dft_ind_relevant %>% 
-  filter(!is.na(with) & !(with %in% "not applicable")) %>% 
-  group_by(with) %>%
-  summarize(
-    rough_relevance = sum(n_uses),
-    .groups = 'drop'
-  ) %>%
-  arrange(desc(rough_relevance))
-```
-
-
-### *R4.9 "With" expansions
-
-`with` from the indications sheet shows drugs that must be taken with the indication (or `0` for monotherapy).  In order to figure out what the most relevant entries are, we assign one point for each indication corresponding to one drug use (representing an indication we can evaluate).  This is called `rough_relevance` below:
-
-```{r}
-#| include: true
-#| eval: false
-dft_with_expansions %>%
-  dt_wrapper(.)
-```
-
-*Notes:*
-
-- We will define taking a drug "with" another one as a definite overlap of one day or more.
-- `rough_relevance` is rough, but it at least gets us to focus on drugs that are in our inclusion criteria and are used quite a few times.
 
 
 
@@ -1148,7 +1143,8 @@ dft_biomarker_expansions %>%
 
 The following table shows a few relevant columns from the `indications.csv` sheet.  This is not filtered, so it contains approvals from other regulators and drugs we've excluded from our analysis.
 
-```{r, include = T}
+```{r}
+#| include: true
 dft_ind_mapped %>% 
   select(component, regulator, date, condition, with,
          context, stage_or_status) %>%
@@ -1164,7 +1160,8 @@ dft_ind_mapped %>%
 
 The Warner `indications.csv` sheet contains many conditions which didn't seem to map to any BPC cohort are:
 
-```{r, include = T}
+```{r}
+#| include: true
 dft_ind_mapped %>%
   count(condition) %>%
   distinct(.) %>%
@@ -1258,6 +1255,5 @@ dat_prostate_ca_ind %>%
 
 - Bring in genomic information for:
   - TMB in prostate.
-  - BRAF or ERBB2.  We would expect one of these in CRC use of trastuzumab and vemurafenib.
 - Add in checks for TNBC and possibly castrate-resistant prostate cancer.  The second one is a big dicey because the med onc notes are imperfectly used.
   

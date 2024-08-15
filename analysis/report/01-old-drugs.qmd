@@ -1,5 +1,5 @@
 ---
-title: "Old drugs - how old is too old?"
+title: "[1] Old drugs - how old is too old?"
 subtitle: "GENIE BPC off label manuscript project"
 author: "Alex Paynter"
 date: "`r Sys.Date()`"

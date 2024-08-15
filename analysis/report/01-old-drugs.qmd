@@ -1,12 +1,23 @@
 ---
 title: "Old drugs - how old is too old?"
 subtitle: "GENIE BPC off label manuscript project"
-format: html
-execute: 
+author: "Alex Paynter"
+date: "`r Sys.Date()`"
+editor_options:
+  quarto:
+    chunk_output_type: console
+format:
+  html:
+    embed-resources: true
+    toc: true
+    theme: sandstone 
+execute:
   echo: false
+  include: false
   warning: false
   message: false
-  include: false
+  fig.width: 7
+  fig.height: 5
 ---
 
 ```{r}

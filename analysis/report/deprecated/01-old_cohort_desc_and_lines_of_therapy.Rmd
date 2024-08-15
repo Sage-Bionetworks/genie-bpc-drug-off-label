@@ -24,8 +24,6 @@ knitr::opts_chunk$set(
 
 
 
-
-
 ```{r}
 library(fs); library(purrr); library(here);
 purrr::walk(.x = fs::dir_ls(here("R")), .f = source)
@@ -1496,6 +1494,7 @@ dft_cape_comp_sum %>%
 
 
 ```{r}
+#| eval: false
 dft_non_mono <- dft_hdrug_determinations %>%
   filter(failure_type %in% "test_monotherapy") %>%
   select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
@@ -1523,6 +1522,7 @@ Here are drug uses which were off label due to monotherapy requirement violation
 
 ```{r}
 #| include: true
+#| eval: false
 dft_non_mono %>%
   count(cohort, agent, drug_overlaps, name = "cases") %>%
   flextable(.) %>%
@@ -1541,13 +1541,14 @@ dft_non_mono %>%
 
 
 ```{r}
-agents_included <- unique(dft_hdrug_determinations$agent)
+#| eval: false
+agents_included <- unique(dft_hdrug_det$agent)
 
-dft_ind_relevant <- dft_ind_lim %>% 
+dft_ind_relevant <- dft_ind_mapped %>% 
   filter(regulator %in% "FDA") %>%
   filter(!is.na(mapped_cohort) & mapped_agent %in% agents_included) 
 
-dft_ind_relevant <- dft_hdrug_determinations %>%
+dft_ind_relevant <- dft_hdrug_det %>%
   count(cohort, agent, name = "n_uses") %>%
   rename(mapped_cohort = cohort, mapped_agent = agent) %>%
   left_join(
@@ -1562,19 +1563,8 @@ dft_with_expansions <- dft_ind_relevant %>%
     .groups = 'drop'
   ) %>%
   arrange(desc(rough_relevance))
-
-
-dft_biomarker_expansions <- dft_ind_relevant %>% 
-  filter(!is.na(biomarker) & !(biomarker %in% "not applicable")) %>% 
-  group_by(biomarker) %>%
-  summarize(
-    rough_relevance = sum(n_uses),
-    .groups = 'drop'
-  ) %>%
-  arrange(desc(rough_relevance))
-
-  
 ```
+
 
 ### *R4.9 "With" expansions
 
@@ -1582,6 +1572,7 @@ dft_biomarker_expansions <- dft_ind_relevant %>%
 
 ```{r}
 #| include: true
+#| eval: false
 dft_with_expansions %>%
   dt_wrapper(.)
 ```
@@ -1593,6 +1584,32 @@ dft_with_expansions %>%
 
 
 
+
+
+```{r}
+agents_included <- unique(dft_hdrug_det$agent)
+
+dft_ind_relevant <- dft_ind_mapped %>% 
+  filter(regulator %in% "FDA") %>%
+  filter(!is.na(mapped_cohort) & mapped_agent %in% agents_included) 
+
+dft_ind_relevant <- dft_hdrug_det %>%
+  count(cohort, agent, name = "n_uses") %>%
+  rename(mapped_cohort = cohort, mapped_agent = agent) %>%
+  left_join(
+    dft_ind_relevant, ., by = c('mapped_cohort', 'mapped_agent')
+  )
+
+dft_biomarker_expansions <- dft_ind_relevant %>% 
+  filter(!is.na(biomarker) & !(biomarker %in% "not applicable")) %>% 
+  group_by(biomarker) %>%
+  summarize(
+    rough_relevance = sum(n_uses),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(rough_relevance))
+  
+```
 
 ### *R4.10 Biomarker expansions
 

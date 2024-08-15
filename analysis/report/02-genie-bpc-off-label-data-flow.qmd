@@ -1,14 +1,11 @@
 ---
 title: "Off-Label & Off-Guideline Project"
-subtitle: "Side report on data flow/loss"
+subtitle: "Data flow - a CONSORT diagram equivalent for drug uses"
 author: "Alex Paynter"
 date: "`r Sys.Date()`"
-output:
-  quarto::quarto_html:
 editor_options:
   quarto:
     chunk_output_type: console
-  chunk_output_type: console
 format:
   html:
     embed-resources: true

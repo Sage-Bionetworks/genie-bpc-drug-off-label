@@ -1,28 +1,24 @@
 ---
 title: "Off-Label & Off-Guideline Project"
+subtitle: "Main results, explorations"
 author: "Alex Paynter"
 date: "`r format(Sys.Date(), '%d %b %Y')`"
-output: 
-  html_document:
+editor_options:
+  quarto:
+    chunk_output_type: console
+format:
+  html:
+    embed-resources: true
     toc: true
-    toc_float: false
-    theme: paper
-editor_options: 
-  chunk_output_type: console
+    theme: sandstone 
+execute:
+  echo: false
+  include: false
+  warning: false
+  message: false
+  fig.width: 7
+  fig.height: 5
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = F,
-  include = F,
-  warning = F,
-  message = F,
-  fig.width = 7,
-  fig.height = 5
-)
-```
-
-
 
 
 
@@ -139,7 +135,8 @@ Obviously the text representations of these two concepts are slightly different,
 
 #### Crosswalk: Conditions
 
-```{r, include = T}
+```{r}
+#| include: true
 dft_cw_condition %>%
   flextable(.) %>% 
   autofit(.)
@@ -151,7 +148,8 @@ All other `condition` entries from the Warner list are unmapped/unused.  The ful
 
 Reminder: `agent` is directly pulled GENIE BPC's `regimen_drugs` after splitting up the drugs.  `component` is from Warner's indications sheet.
 
-```{r, include = T}
+```{r}
+#| include: true
 dft_cw_drug %>%
   select(component, agent, agent_map_type) %>%
   dt_wrapper(.)
@@ -284,19 +282,22 @@ dfp_olu_cohort_type %<>%
 
 By cohort (denominators show the number of total drug uses included):
 
-```{r, include = T}
+```{r}
+#| include: true
 dfp_olu_cohort
 ```
 
 By reason (see notes on prioritization above):
 
-```{r, include = T}
+```{r}
+#| include: true
 dfp_olu_type
 ```
 
 Crosstabulation between those two.  The bottom row shows the number of on-label uses.
 
-```{r, include = T}
+```{r}
+#| include: true
 dfp_olu_cohort_type
 ```
 
@@ -354,7 +355,8 @@ dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
 
 
 
-```{r, include = T}
+```{r}
+#| include: true
 dt_off_label <- dft_off_label_uses %>%
   select(cohort, agent, off_label_type, n_off_label) %>%
   arrange(desc(n_off_label)) %>% # good default.
@@ -372,7 +374,8 @@ dt_off_label <- dft_off_label_uses %>%
 
 The following table shows rows grouped by {cohort, agent, off_label_type}.  For example, a row might show the number of off label uses of capecitabine in the pancreatic cohort, which were due to using a drug before the approval date.
 
-```{r, include = T}
+```{r}
+#| include: true
 dt_off_label
 ```
 
@@ -415,7 +418,8 @@ dt_off_label_first_drug <- dft_off_label_uses_first_drug %>%
 
 The following table is the same as the previous one, except we limit to only the first day of drug use by each person:
  
-```{r, include = T}
+```{r}
+#| include: true
 dt_off_label_first_drug 
 ```
 
@@ -526,7 +530,8 @@ gg_comb
 
 We observed previous that first drugs seem to be on label more frequently and hypothesized that later regimens may have more off label use.  The following graph is a rough expansion on that idea:
 
-```{r, include = T}
+```{r}
+#| include: true
 gg_comb
 ```
 
@@ -576,7 +581,8 @@ Previously we made the most conservative possible assumption on date of drug sta
 
 We calculated the maximally anti-conservative assumption too:  That they were born on Jan 1 of their `birth_year`.  The following table shows the number of off label uses by cohort when we make those two assumptions:
 
-```{r, include = T}
+```{r}
+#| include: true
 dft_date_compare %>%
   flextable(.) %>%
   autofit(.)
@@ -635,7 +641,8 @@ In our March 2024 meeting we discussed the surprising number of off label uses i
 
 After seeing the results, we added a lower pane distribution for **all** drug uses (even those we're not considering as candidates for off-label use).  The point of this is to provide a comparator distribution for when subjects in this cohort were starting drugs overall.  
 
-```{r, include = T}
+```{r}
+#| include: true
 cowplot::plot_grid(
   gg_panc_cape,
   gg_panc_all_drug,
@@ -688,7 +695,8 @@ gg_pros_all_drug <- dft_hdrug_cohort %>%
 
 The second most frequent cohort/drug combo which was taken before an approval was Prostate cancer + Olaparib.  I was motivated to look into this partially to see if the above plot could be a coding error.  Here is the distribution of start drug start times, with the distribution of start times for any drug as a comparison:
 
-```{r, include = T}
+```{r}
+#| include: true
 cowplot::plot_grid(
   gg_pros_olaparib,
   gg_pros_all_drug,
@@ -740,7 +748,8 @@ gg_nsclc_all_drug <- dft_hdrug_cohort %>%
 
 One more, skipping over the pembro cases which could be attributed to a TMB indication unrelated to cancer type: 
 
-```{r, include = T}
+```{r}
+#| include: true
 cowplot::plot_grid(
   gg_nsclc_ipili,
   gg_nsclc_all_drug,
@@ -892,7 +901,9 @@ ggsave(
 We discussed above the possibility that the NCCN guidelines could precede approvals and have an impact on the way people treat.  The following graph shows the number of mentions of "cape", which tend to be things like "Capecitabine" and "CapeOx".  I excluded "Capello", which is an author's name appearing in the references later on.  This is normalized by the number of alphabetic (not alphanumeric) characters in the guideline, to adjust somewhat for the massive expansion in their size over time.
 
 
-```{r, include = T, fig.height = 3}
+```{r}
+#| include: true 
+#| fig.height: 3
 gg_nccn_cape
 ```
 
@@ -944,7 +955,8 @@ dfp_crc_biomarkers <- dft_hdrug_det %>%
 
 We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a genomic alteration in BRAF or ERBB2 which could explain the decision to administer these drugs.  The following table provides a flag for each one, ignoring timing entirely.  In other words, a BRAF mutation or amplification (copy number alteration) at any time would result in `TRUE`.  `Record [reg]` is the record ID and regimen number.
 
-```{r, include = T}
+```{r}
+#| include: true
 flextable(dfp_crc_biomarkers) %>%
   autofit(.) %>%
   flextable::merge_v(j = 1) %>%
@@ -1017,7 +1029,8 @@ This is a generalized answer to the question "Was Capecitabine given with Erloti
 
 The following table lists the drugs which accompany regimens where Capecitabine was given.  If Capecitabine was the only drug used in the regimen we just note "(monotherapy)". The counts are in strata defined by whether the use of capecitabine was valid in that regimen, and which cohort the person belongs to.
 
-```{r, include = T}
+```{r}
+#| include: true
 dft_cape_comp_sum %>%
   flextable(.) %>%
   autofit(.) %>%
@@ -1035,54 +1048,13 @@ dft_cape_comp_sum %>%
 
 
 
-```{r}
-#| eval: false
-dft_non_mono <- dft_hdrug_determinations %>%
-  filter(failure_type %in% "test_monotherapy") %>%
-  select(cohort, record_id, ca_seq, regimen_number, drug_number) %>%
-  left_join(
-    .,
-    dft_hdrug_conmed,
-    by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
-  ) %>%
-  select(cohort, record_id, ca_seq, regimen_number, drug_number, agent, drug_overlaps) %>%
-  mutate(
-    drug_overlaps = purrr::map_chr(
-      .x = drug_overlaps,
-      .f = \(z) paste(z, collapse = ",")
-    )
-  )
 
-dft_non_mono %>%
-  count(cohort, agent, drug_overlaps)
 
-```
 
-### *R4.8 Monotherapy violations
 
-Here are drug uses which were off label due to monotherapy requirement violations:
 
 ```{r}
 #| include: true
-#| eval: false
-dft_non_mono %>%
-  count(cohort, agent, drug_overlaps, name = "cases") %>%
-  flextable(.) %>%
-  autofit(.)
-```
-
-*Notes:*
-
-- We consider all drugs when looking for overlaps.  For example oxaliplatin is excluded based on approval date, but we bring it back in when looking at whether capecitabine was used as monotherapy.
-- If we want to keep pushing on the `with` column we need to make this move of bringing in all drugs (for example, cisplatin is a common `with` entry).
-
-
-
-
-
-
-
-```{r}
 #| eval: false
 agents_included <- unique(dft_hdrug_det$agent)
 

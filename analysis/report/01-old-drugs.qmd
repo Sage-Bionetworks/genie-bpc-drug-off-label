@@ -39,7 +39,6 @@ dft_hdrug_ind <- readr::read_rds(
 
 At our January 2024 meeting we discussed the low utility of old FDA labels.  One solution to this is discarding old drugs, but we have to decide on a cutoff.  This document presents some information to help us make that choice.
 
-
 ```{r}
 
 dft_first_approvals <- dft_ind_mapped |> 

@@ -37,11 +37,13 @@ set_flextable_defaults(
 
 
 dt_wrapper <- function(x) {
+  x_col <- ncol(x)
   DT::datatable(
     x,
     style = "bootstrap4",
     fillContainer = F
-  )
+  ) %>%
+    dt::formatStyle(columns = 1:x_col, fontSize = '8pt')
 }
     
 ```
@@ -116,11 +118,26 @@ dft_hdrug_conmed <- readr::read_rds(
 
 ```{r}
 gg_step_cohort_n <- readr::read_rds(
-  here('data', 'linked_approvals', 'stepwise', 'gg_step_cohort_n.rds')
+  here('data', 'linked_approvals', 'stepwise',
+       'gg_step_cohort_n.rds')
 )
 gg_step_cohort_prop <- readr::read_rds(
-  here('data', 'linked_approvals', 'stepwise', 'gg_step_cohort_prop.rds')
+  here('data', 'linked_approvals', 'stepwise',
+       'gg_step_cohort_prop.rds')
 )
+
+dft_stepwise_new_olu <- readr::read_rds(
+  here('data', 'linked_approvals', 'stepwise',
+       'stepwise_new_off_label.rds')
+)
+dft_stepwise <- readr::read_rds(
+  here('data', 'linked_approvals', 'stepwise',
+       'stepwise_dat.rds')
+)
+dft_hdrug_cm <- readr::read_rds(
+  here('data', 'cohort', 'hdrug_with_conmeds.rds')
+)
+       
 # actually don't need any of the other stepwise stuff just yet.
 ```
 
@@ -390,6 +407,7 @@ The following table shows rows grouped by {cohort, agent, off_label_type}.  For 
 dt_off_label
 ```
 
+**Note:** We had a version of this with only the first drug used as a sanity check.  I think we're past that, so I've removed it, but it can be brought back if you miss it.
 
 
 
@@ -408,8 +426,7 @@ dt_off_label
 
 
 
-
-
+<!--
 
 ```{r}
 dt_off_label_first_drug <- dft_off_label_uses_first_drug %>%
@@ -430,9 +447,13 @@ dt_off_label_first_drug <- dft_off_label_uses_first_drug %>%
 The following table is the same as the previous one, except we limit to only the first day of drug use by each person:
  
 ```{r}
-#| include: true
+#| include: false
 dt_off_label_first_drug 
 ```
+
+
+-->
+
 
 
 ### R3.5 Expanded "Specific condidtions not met"
@@ -1089,8 +1110,52 @@ dft_cape_comp_sum %>%
 
 
 
+```{r}
+library(collapsibleTree)
+org <- data.frame(
+    Manager = c(
+        NA, "Ana", "Ana", "Bill", "Bill", "Bill", "Claudette", "Claudette", "Danny",
+        "Fred", "Fred", "Grace", "Larry", "Larry", "Nicholas", "Nicholas"
+    ),
+    Employee = c(
+        "Ana", "Bill", "Larry", "Claudette", "Danny", "Erika", "Fred", "Grace",
+        "Henri", "Ida", "Joaquin", "Kate", "Mindy", "Nicholas", "Odette", "Peter"
+    ),
+    Title = c(
+        "President", "VP Operations", "VP Finance", "Director", "Director", "Scientist",
+        "Manager", "Manager", "Jr Scientist", "Operator", "Operator", "Associate",
+        "Analyst", "Director", "Accountant", "Accountant"
+    )
+)
+```
 
 
+```{r}
+#| include: true
+collapsibleTree(org, c("Manager", "Employee"), collapsed = FALSE)
+```
+
+
+
+
+```{r}
+#| eval: false
+
+# we'll get back to this, just a quick add since Shawn asked.
+dft_hdrug_cm
+
+dft_stepwise_new_olu %>% 
+  filter(step %in% 'test_with_carbotaxol') %>% 
+  pull(new_off_label) %>% 
+  `[[`(.,1) %>%
+  left_join(., dft_hdrug_cm, 
+            by = c('cohort', 'record_id', 'ca_seq', 'regimen_number',
+                   'drug_number', 'agent')
+  ) %>%
+  count(cohort, agent, drug_overlaps_vec, sort = T) %>%
+  View(.)
+            
+```
 
 
 

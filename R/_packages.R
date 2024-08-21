@@ -28,5 +28,6 @@ library(DT)
 library(ggtext)
 library(scales)
 library(cowplot)
+library(collapsibleTree)
 
 library(cfmisc)

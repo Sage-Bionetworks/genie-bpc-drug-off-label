@@ -90,7 +90,7 @@ dft_hdrug_determinations <- summarize_possible_approvals_2(dft_poss_app)
 
 levs_failure_type <- c(
   "No indications found",
-  "Specific conditions not met",
+  "Specific req. not met",
   "Started before approval"
 )
 

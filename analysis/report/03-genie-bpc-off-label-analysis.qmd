@@ -36,14 +36,18 @@ set_flextable_defaults(
 )
 
 
-dt_wrapper <- function(x) {
-  x_col <- ncol(x)
+dt_wrapper <- function(x, font.size = '10pt') {
   DT::datatable(
     x,
     style = "bootstrap4",
-    fillContainer = F
-  ) %>%
-    dt::formatStyle(columns = 1:x_col, fontSize = '8pt')
+    fillContainer = F,
+    options=list(
+      initComplete = htmlwidgets::JS(
+        "function(settings, json) {",
+        paste0("$(this.api().table().container()).css({'font-size': '", font.size, "'});"),
+        "}")
+    ) 
+  )
 }
     
 ```
@@ -112,6 +116,11 @@ dft_gen_mark <- readr::read_rds(
 dft_hdrug_conmed <- readr::read_rds(
   here('data', 'cohort', 'hdrug_with_conmeds.rds')
 )
+
+js_olu_cat_explain_tree <- readr::read_rds(
+  file = here('data', 'linked_approvals', 'js_tree_olu_cat.rds')
+)
+
 ```
 
 
@@ -133,9 +142,6 @@ dft_stepwise_new_olu <- readr::read_rds(
 dft_stepwise <- readr::read_rds(
   here('data', 'linked_approvals', 'stepwise',
        'stepwise_dat.rds')
-)
-dft_hdrug_cm <- readr::read_rds(
-  here('data', 'cohort', 'hdrug_with_conmeds.rds')
 )
        
 # actually don't need any of the other stepwise stuff just yet.
@@ -306,7 +312,7 @@ dfp_olu_cohort_type %<>%
   
 ```
 
-### *R3.2 OLU Overview
+### *R3.2 OLU - high level
 
 By cohort (denominators show the number of total drug uses included):
 
@@ -383,6 +389,71 @@ dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
 
 
 
+
+
+
+
+
+
+### R3.3 OLU detailed
+
+**Obviously some major revisions needed on text here**
+
+```{r}
+#| include: true
+js_olu_cat_explain_tree
+```
+
+
+"Specific conditions not met" above is a catch-all for dozens of tests.  It's everything except having the correct cancer type (checked first) and having the correct date (checked last).  Things that we check include:
+
+- Whether the patient is metastatic, iff required for the drug indication.
+- Whether any required concomitant meds were used (including monotherapy, `test_with_ nothing`)
+- *In progress* whether they met clinical conditions (HER2+, ALK mutation, etc.).
+
+The following graph shows the number of cases considered off label as we add each test (from top to bottom).  While the test order does matter, a large horizontal jump when a test is added indicates that a valid indication could no longer be found for many people when we added that check.  That gives us a sign of something to pursue further below.
+
+```{r}
+#| include: true
+gg_step_cohort_n
+```
+
+
+**Notes:**
+
+A few (other than the first and last check) that jump out to me:
+
+- Breast: with exemestane.
+- Pancreas: with gemcitabine, with FOLF.
+- NSCLC: with carboplatin and with cisplatin, with dabrafenib.
+- CRC: with folfiri (weak).
+- Prostate: metastatic.
+
+
+The same graph can be shown using proportions too, just for completeness:
+
+```{r}
+#| include: true
+gg_step_cohort_prop
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```{r}
 #| include: true
 dt_off_label <- dft_off_label_uses %>%
@@ -398,7 +469,7 @@ dt_off_label <- dft_off_label_uses %>%
   dt_wrapper(.)
 ```
 
-### *R3.3 OLU table, sortable
+### *R3.4 OLU table, sortable
 
 The following table shows rows grouped by {cohort, agent, off_label_type}.  For example, a row might show the number of off label uses of capecitabine in the pancreatic cohort, which were due to using a drug before the approval date.
 
@@ -1110,45 +1181,18 @@ dft_cape_comp_sum %>%
 
 
 
-```{r}
-library(collapsibleTree)
-org <- data.frame(
-    Manager = c(
-        NA, "Ana", "Ana", "Bill", "Bill", "Bill", "Claudette", "Claudette", "Danny",
-        "Fred", "Fred", "Grace", "Larry", "Larry", "Nicholas", "Nicholas"
-    ),
-    Employee = c(
-        "Ana", "Bill", "Larry", "Claudette", "Danny", "Erika", "Fred", "Grace",
-        "Henri", "Ida", "Joaquin", "Kate", "Mindy", "Nicholas", "Odette", "Peter"
-    ),
-    Title = c(
-        "President", "VP Operations", "VP Finance", "Director", "Director", "Scientist",
-        "Manager", "Manager", "Jr Scientist", "Operator", "Operator", "Associate",
-        "Analyst", "Director", "Accountant", "Accountant"
-    )
-)
-```
-
-
-```{r}
-#| include: true
-collapsibleTree(org, c("Manager", "Employee"), collapsed = FALSE)
-```
-
-
-
 
 ```{r}
 #| eval: false
 
 # we'll get back to this, just a quick add since Shawn asked.
-dft_hdrug_cm
+dft_hdrug_conmed
 
 dft_stepwise_new_olu %>% 
   filter(step %in% 'test_with_carbotaxol') %>% 
   pull(new_off_label) %>% 
   `[[`(.,1) %>%
-  left_join(., dft_hdrug_cm, 
+  left_join(., dft_hdrug_conmed, 
             by = c('cohort', 'record_id', 'ca_seq', 'regimen_number',
                    'drug_number', 'agent')
   ) %>%

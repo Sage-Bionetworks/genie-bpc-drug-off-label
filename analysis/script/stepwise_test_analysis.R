@@ -133,33 +133,38 @@ readr::write_rds(
   file = here(dir_output, 'step_sum_cohort.rds')
 )
 
-
 gg_step_cohort_n <- ggplot(
   data = mutate(dft_step_cohort, step = fct_rev(step)),
   aes(y = step, x = n_off_label, color = cohort, group = cohort)
 ) + 
+  geom_hline(yintercept = seq(0,100,by = 2), size = 3, alpha = 0.1) + 
   geom_line() +
   theme_bw() +
   theme(
     strip.text = element_text(hjust = 0),
     legend.position = "bottom",
-    axis.text.y = element_text(hjust = 1)
+    axis.text.y = element_text(hjust = 1),
+    panel.grid = element_blank(),
+    
   ) + 
   scale_x_continuous(
     expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
     limits = c(0, NA),
     name = "Number off label"
   ) +
+  scale_y_discrete(position = "right") +
   scale_color_vibrant() +
   labs(
     y = paste0(
-      "←last", 
+      "←first", 
       paste(rep(" ", 10), collapse = ""), 
       "Step", 
       paste(rep(" ", 10), collapse = ""),
-      "first→"
+      "last→"
     )
   )
+
+gg_step_cohort_n
 
 readr::write_rds(
   gg_step_cohort_n,
@@ -194,6 +199,8 @@ gg_step_cohort_prop <- ggplot(
       "first→"
     )
   )
+
+gg_step_cohort_prop
 
 readr::write_rds(
   gg_step_cohort_prop,

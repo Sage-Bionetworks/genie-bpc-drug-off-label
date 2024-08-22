@@ -57,12 +57,12 @@ dt_wrapper <- function(x, font.size = '10pt') {
 
 This is a working document for analyses related to the Off-label & Off-guideline manuscript chaired by Jeremy Warner.
 
-You may notice that this report starts on chapter 3, a bit unusual.  Chapters 1 and 2 were originally:
+You may notice that this report starts on chapter 3 - a bit unusual.  Chapters 1 and 2 were originally:
 
-- **Chapter 1** - Cohort information.  This is now a separate report showing all the filtering steps we do.
-- **Chapter 2** - Lines of therapy.  We dropped this because it was hard.
+- **Chapter 1** - Cohort information.  This is now a separate report showing all the filtering steps, and how much of the data is removed with each one.  Generally we removed things that made the analysis more difficult, like people with multiple cancers, Canadian patients, any trial drug, etc.   We also removed any drug with a first global approval before Jan 1, 1997, as these labels tend not to be updated as use expands to new conditions.
+- **Chapter 2** - Lines of therapy.  We dropped this because it's fairly hard and may not have much payoff.
 
-All this code lives on in a deprecated folder, but it's no longer a key part of the analysis.
+All this code can be brought back if needed, but it was removed for concision.
 
 
 ```{r}
@@ -150,22 +150,21 @@ dft_stepwise <- readr::read_rds(
 
 
 
-## Ch 3 - Joining to indications
+## Ch 3 - Joining exposures to indications
 
 ### R3.0 Linkage Strategy
 
 To generate a list of potential approvals we will join two datasets:
 
-- Jeremy Warner's indications sheet, which lists about 3000 rows of approvals over several regulatory agencies.
-- The regimen BPC data, reshaped to be one row per drug rather than one row per regimen.  Filtering described in chapter 1 generally applies.
-  - Additionally, we excluded **any drug approved before 1997** as those labels tend to be discordant with practice. 
+- **HemOnc.org extract** - Jeremy Warner's indications sheet, which lists about 3000 rows of approvals.
+- **GENIE BPC data** The regimen BPC data, reshaped to be one row per drug rather than one row per regimen.  Again, see the report on filtering for the reductions in this dataset. 
 
 The concepts we are joining on are:
 
-- Warner's `condition` is mapped to BPC `cohort`.
-- Warner's `component` is mapped to BPC `agent`.  `agent` is a reshape of drug names from the `regimen_drugs` column.
+- HemOnc `condition` is mapped to BPC `cohort`.
+- HemOnc `component` is mapped to BPC `agent`.  `agent` is a reshape of drug names from the `regimen_drugs` column.
 
-Obviously the text representations of these two concepts are slightly different, so we need some crosswalks to link them.  
+The text strings representing the same concepts in these sheets is slightly different, so that brings us to our crosswalks.
 
 #### Crosswalk: Conditions
 
@@ -194,7 +193,7 @@ Notes:
 - `agent_map_type` is just a short description of the strategy I used to make the link.  The levels are:
   - `exact`: The strings were a perfect (case-ignoring) match.
   - `trimmed`:  After trimming common suffixes from the BPC data (like "sulfate", "acetate") the strings were a perfect match.
-  - `manual`:  Manual link, by someone with no medical or pharmacology training (!).
+  - `manual`:  Manual link.  We discussed these in meetings.
   
 
 
@@ -227,42 +226,45 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 
 #### Crosswalk success
 
-- Of the `r length(vec_bpc_drugs)` unique drugs in our BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
-  - The agents which we couldn't map to anything in the indications sheet are: `r vec_bpc_drugs_not_mapped`.  All used very few times in BPC.
-- Of the `r nrow(dft_hdrug_det)` uses of a drug (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
+- Of the `r length(vec_bpc_drugs)` unique drugs in our post-filtered BPC cohorts, `r n_pct_str(length(vec_ind_drugs %in% vec_bpc_drugs), length(vec_bpc_drugs), show_d = F)` were found in the indications sheet after mapping.
+  - The agents which we couldn't map to anything in the indications sheet are: `r vec_bpc_drugs_not_mapped`.
+- Of the `r nrow(dft_hdrug_det)` exposures (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
 
 
-### R3.1 Off label use def
+### R3.1 Definitions
 
-Our definition of an on-label use is currently any use of a drug which has a matching row in the indications sheet that meets the following criteria:
+We define an **exposure** to be one person using a drug for one block of time.  This is reliant on curation in BPC, so a block of time is pinned to how regimens are curated, but the point to keep in mind is that person X can have multiple exposures to drug Y.
+
+Our definition of an on-label exposure is currently any use of a drug which has a matching row in the indications sheet that meets the following criteria:
 
 1. A matching indication exists, meaning:
 
   - Regulator for the approval is FDA.
-  - Condition maps to the BPC cohort of the drug use.
-  - Component maps to the BPC agent (regimen drug) of the drug use.
+  - Condition maps to the BPC cohort of the exposure.
+  - Component maps to the BPC agent (regimen drug) of the exposure.
   
 2. If the indication a requires metastatic state, the drug use started after a metastatic diagnosis.
 
-3. The drug start date is after the approval date for the drug.  Notes:
+3. If the indication requires concomitant medications, all of those meds overlap with the exposure under study by at least one day.  This includes exposures required to be issued as monotherapy (we require they overlap with nothing).
+
+4. The drug start date is after the approval date for the drug.  Notes:
 
   - We do not have exact dates in GENIE BPC.  We calculate the maximum drug start date given a participant's `birth_year` (whole years) and the interval from birth date to start of the drug (an exact number of days) by assuming they were born on Dec 31.
   - Assuming people were born as late as possible is conservative in that we consider the fewest number possible off-label by date.
-  - A later section will deal with the opposite assumption (taking the minimum possible drug start date).
-
-Planned expansions to this definition include:
-
-- Additional indications for non-cohort things like TMB for pembrolizumab.
 
 **Off-label** use is a drug use which can't be verified as on-label according to the definition above under any indication in our sheet.
 
-Each off label use is assigned a single "reason" it's off label, which means we have a priority system.  The following order is used:
+We assign a "type" of off label use for each drug.  The reasons are the following:
 
-- **No indications found** - There was no cancer type indication at all for this drug use.
-- **Not metastatic at use** - The applicable drug indication required metastases at use and the participant did not have distant mets recorded when the drug was started.
-- **Started before approval** - The drug was started before the approval date.
+- **No indications found**: The drug isn't approved for the cancer type.
+- **Specific req. not met**: Specific requirements in the label were not met.  For example, maybe the label required metastatic or concomitant cisplatin use in this cancer type (and the exposure did not come with those).
+- **Started before approval**: All the specific requirements were met, but they started the drug before it was approved.
 
-For example, if a participant uses a drug in 2015 while not metastatic, and the drug required metastases with it's only approval in 2017, that will count as "Not metastatic at use" (higher priority).  These can be shifted around, except for "no indication found".
+Each exposure is categorized according to the indication which made it the furthest in this list.  For example, suppose a capecitabine use matched to two indication rows.  One of the indications did not work because the patient was not metastatic, and one of them passed all checks except for being started before approval.  This exposure would be categorized as "Started before approval".  
+
+We posed the question "are off label uses good or bad?".  I think this question can be separated into "was it bad for the patient to get this drug?" and "does this use say something bad about the clarity of our system of drug approvals?" Unforunately I think our answers are case-specific.  I can think of examples of both good and bad to both questions in all three categories.  But I think meeting all the requirements the FDA settled on, but just being too early (Started before approval) seems meaningfully distinct to me, and less likely to represent a patient harm.  This is why I've kept this as its own category.
+
+Section 3.4 shows a tree detailing all the checks going into "Specific req. not met".
 
 
 
@@ -314,7 +316,7 @@ dfp_olu_cohort_type %<>%
 
 ### *R3.2 OLU - high level
 
-By cohort (denominators show the number of total drug uses included):
+By cohort (denominators show the number of total exposures included):
 
 ```{r}
 #| include: true
@@ -397,24 +399,24 @@ dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
 
 ### R3.3 OLU detailed
 
-**Obviously some major revisions needed on text here**
+Above we presented three <span style="color:#E63746;">broad categories</span> for off label use, this section shows what happens when each <span style="color:#07C592;">individual check</span> is added.  Here is a tree showing how these relate:
 
 ```{r}
 #| include: true
 js_olu_cat_explain_tree
 ```
 
+Specific notes:
 
-"Specific conditions not met" above is a catch-all for dozens of tests.  It's everything except having the correct cancer type (checked first) and having the correct date (checked last).  Things that we check include:
+- "test_met" Test that the patient was confirmed metastatic on the day they started this drug.
+- "test_with_X" Test that the exposure overlapped with X by at least one day (iff X is required for the indication).  
+- "test_with_nothing" This is a monotherapy check.
 
-- Whether the patient is metastatic, iff required for the drug indication.
-- Whether any required concomitant meds were used (including monotherapy, `test_with_ nothing`)
-- *In progress* whether they met clinical conditions (HER2+, ALK mutation, etc.).
-
-The following graph shows the number of cases considered off label as we add each test (from top to bottom).  While the test order does matter, a large horizontal jump when a test is added indicates that a valid indication could no longer be found for many people when we added that check.  That gives us a sign of something to pursue further below.
+Recall that we categorize participants according to the indication that makes it past the highest number of tests.  The graphs below will show how many off label exposures we have after each test was added (the last row is the total stated above).  Big horizontal jumps indicate that requirement was the deepest barrier to being on-label for a large number of people.  That gives us a sign of something to pursue further below.
 
 ```{r}
 #| include: true
+#| fig-height: 6
 gg_step_cohort_n
 ```
 
@@ -428,14 +430,18 @@ A few (other than the first and last check) that jump out to me:
 - NSCLC: with carboplatin and with cisplatin, with dabrafenib.
 - CRC: with folfiri (weak).
 - Prostate: metastatic.
+- All cohorts had a jump at "test_date_definite"
 
 
 The same graph can be shown using proportions too, just for completeness:
 
 ```{r}
 #| include: true
+#| fig-height: 6
 gg_step_cohort_prop
 ```
+
+
 
 
 

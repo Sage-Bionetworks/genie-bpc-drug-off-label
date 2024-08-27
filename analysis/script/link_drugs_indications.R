@@ -43,8 +43,7 @@ dft_poss_app <- make_possible_indication_cohort(
 
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) 
- 
-dft_poss_app %<>% add_check_monotherapy(.) 
+
 
 dft_simple_with_tests <- readr::read_rds(
   here('data', 'linked_approvals', 'simple_with_tests.rds')
@@ -71,6 +70,14 @@ for (k in seq_len(nrow(dft_simple_with_tests))) {
     test_name = pull(dft_simple_with_tests, test_name)[[k]]
   )
 }
+
+
+
+dft_poss_app %<>% add_check_monotherapy(.) 
+dft_poss_app %<>% add_check_chemo(.)
+dft_poss_app %<>% add_check_plat(.)
+
+
 
   
 dft_poss_app %<>% add_check_date_definite(.) 

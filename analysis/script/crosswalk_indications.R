@@ -35,6 +35,7 @@ dft_ind %<>%
       # This isn't strictly an error, but its inconsistent with the general
       #   convention to capitalize the first word.
       with %in% "trastuzumab" ~ "Trastuzumab",
+      with %in% "not applicable" ~ NA_character_,
       T ~ with
     )
   )

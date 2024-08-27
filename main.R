@@ -17,11 +17,13 @@ source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'declare_with_tests.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))
 source(here('analysis', 'script', 'stepwise_test_analysis.R'))
+source(here('analysis', 'script', 'stepwise_tree_explanation.R'))
 source(here('analysis', 'script', 'scrape_guidelines.R'))
 
-rmarkdown::render(
-  input = here('analysis', 'report', '01-genie-bpc-off-label.Rmd'),
-  output_file = here('output', '01-genie-bpc-off-label.html')
-)
+# no longer an rmarkdown doc:
+# rmarkdown::render(
+#   input = here('analysis', 'report', '01-genie-bpc-off-label.Rmd'),
+#   output_file = here('output', '01-genie-bpc-off-label.html')
+# )
 
 # Render for 02 report, 03 report, etc.

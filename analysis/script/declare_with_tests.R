@@ -86,6 +86,9 @@ dft_simple_with_tests %<>%
   ) %>%
   add_row(
     with_req = "Encorafenib"
+  ) %>%
+  add_row(
+    with_req = "Paclitaxel"
   )
 
 dft_simple_with_tests %<>%
@@ -191,6 +194,27 @@ dft_simple_with_tests %<>%
       "Gemcitabine Hydrochloride"
     )),
     test_name = "test_with_gem_cis" 
+  )
+
+dft_simple_with_tests %<>%
+  add_row(
+    with_req = "Bevacizumab AND Paclitaxel AND Carboplatin",
+    agent_req = list(c(
+      "Bevacizumab",
+      "Paclitaxel",
+      "Carboplatin"
+    )),
+    test_name = "test_with_bev_pac_carbo"
+  )
+
+dft_simple_with_tests %<>%
+  add_row(
+    with_req = "Trastuzumab AND Docetaxel",
+    agent_req = list(c(
+      "Trastuzumab",
+      "Docetaxel"
+    )),
+    test_name = "test_with_trast_doce"
   )
 
 readr::write_rds(

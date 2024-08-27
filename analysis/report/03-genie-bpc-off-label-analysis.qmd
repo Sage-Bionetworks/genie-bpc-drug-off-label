@@ -100,6 +100,12 @@ dft_hdrug_det <- readr::read_rds(
 dft_poss_app <- readr::read_rds(
   here('data', 'linked_approvals', 'possible_approvals.rds')
 )
+
+# We look at this below to keep track of with cases we want to cover better:
+dft_simple_with_tests <- readr::read_rds(
+   here('data', 'linked_approvals', 'simple_with_tests.rds')
+)
+
 ```
 
 
@@ -274,68 +280,62 @@ Section 3.4 shows a tree detailing all the checks going into "Specific req. not 
 dft_hdrug_det %<>% 
   mutate(off_label_type = failure_type_f)
 
-dfp_olu_cohort <- dft_hdrug_det %>%
-  count_off_label(group_vars = c('cohort')) %>%
-  mutate(
-    off_label_uses = n_pct_str(n_off_label, n_uses, show_d = T)
-  ) %>%
-  select(-c(n_uses, n_on_label, n_off_label, prop_off_label)) %>%
-  flextable(.) %>%
-  autofit(.)
+dfp_olu_type_cohort <- dft_hdrug_det %>%
+  filter(!is.na(off_label_type)) %>%
+  tabyl(off_label_type, cohort) %>%
+  adorn_totals(where = "both") %>%
+  as_tibble(.)
 
-dfp_olu_type <- dft_hdrug_det %>%
-  filter(!valid_ind_exists) %>%
-  count(off_label_type) %>%
-  flextable(.) %>%
-  autofit(.)
+# little hacky but I think it'll work:
+dft_exposures <- tabyl(dft_hdrug_det, cohort) %>% 
+  adorn_totals(.)
 
-dfp_olu_cohort_type <- dft_hdrug_det %>%
-  count(off_label_type, cohort) %>%
-  complete(
-    data = .,
-    off_label_type, cohort,
-    fill = list(n = 0)
-  ) %>%
-  pivot_wider(
-    names_from = cohort,
-    values_from = n
-  ) %>%
-  mutate(
-    off_label_type = replace_na(
-      as.character(off_label_type), 
-      "(on label)"
-    )
-  ) 
+vec_olu_denoms <- dft_exposures$n
 
-dfp_olu_cohort_type %<>%
+col_totals_with_pct <- dfp_olu_type_cohort %>%
+  filter(off_label_type %in% "Total") %>%
+  select(Bladder:Total) %>%
+  unlist
+
+col_totals_with_pct <- paste0(
+  col_totals_with_pct, " (",
+  round(col_totals_with_pct / vec_olu_denoms * 100, 0), "%)"
+)
+
+dfp_olu_type_cohort %<>% mutate(across(.cols = everything(), .fns = as.character))
+
+# real fragile:
+dfp_olu_type_cohort[4,2:ncol(dfp_olu_type_cohort)] <- as.list(col_totals_with_pct)
+
+
+
+dfp_olu_type_cohort %<>%
+  # arrange(., desc(off_label_type %in% "Total")) %>%
+  rename(` ` = off_label_type) %>%
   flextable(.) %>%
+  add_header_row(
+    values = c("", paste0("m=", vec_olu_denoms)),
+    top = F
+  ) %>%
   autofit(.) %>%
-  flextable::color(i = nrow(dfp_olu_cohort_type), color = "gray50")
+  hline(part = "header", i = 1, border = fp_border_default(width = 0))
+  
   
 ```
 
 ### *R3.2 OLU - high level
 
-By cohort (denominators show the number of total exposures included):
+This table shows the high level results in each cohort, split by three broad categories.  Details on the checks going into each category are given in the next section.
 
 ```{r}
 #| include: true
-dfp_olu_cohort
+dfp_olu_type_cohort
 ```
 
-By reason (see notes on prioritization above):
 
-```{r}
-#| include: true
-dfp_olu_type
-```
 
-Crosstabulation between those two.  The bottom row shows the number of on-label uses.
 
-```{r}
-#| include: true
-dfp_olu_cohort_type
-```
+
 
 
 
@@ -416,7 +416,7 @@ Recall that we categorize participants according to the indication that makes it
 
 ```{r}
 #| include: true
-#| fig-height: 6
+#| fig-height: 7
 gg_step_cohort_n
 ```
 
@@ -437,7 +437,7 @@ The same graph can be shown using proportions too, just for completeness:
 
 ```{r}
 #| include: true
-#| fig-height: 6
+#| fig-height: 7
 gg_step_cohort_prop
 ```
 
@@ -530,44 +530,6 @@ dt_off_label_first_drug
 
 
 -->
-
-
-
-### R3.5 Expanded "Specific condidtions not met"
-
-"Specific conditions not met" above is a catch-all for dozens of tests.  It's everything except having the correct cancer type (checked first) and having the correct date (checked last).  Things that we check include:
-
-- Whether the patient is metastatic, iff required for the drug indication.
-- Whether any required concomitant meds were used (including monotherapy, `test_with_ nothing`)
-- *In progress* whether they met clinical conditions (HER2+, ALK mutation, etc.).
-
-The following graph shows the number of cases considered off label as we add each test (from top to bottom).  While the test order does matter, a large horizontal jump when a test is added indicates that a valid indication could no longer be found for many people when we added that check.  That gives us a sign of something to pursue further below.
-
-```{r}
-#| include: true
-gg_step_cohort_n
-```
-
-
-**Notes:**
-
-A few (other than the first and last check) that jump out to me:
-
-- Breast: with exemestane.
-- Pancreas: with gemcitabine, with FOLF.
-- NSCLC: with carboplatin and with cisplatin, with dabrafenib.
-- CRC: with folfiri (weak).
-- Prostate: metastatic.
-
-
-The same graph can be shown using proportions too, just for completeness:
-
-```{r}
-#| include: true
-gg_step_cohort_prop
-```
-
-
 
 
 
@@ -1268,6 +1230,58 @@ dft_ind_mapped %>%
 
 
 
+## Coverage of checks
+
+
+
+```{r}
+vec_covered_with_simple <- dft_simple_with_tests %>% pull(with_req) %>% unique
+
+# These have to be manually updated:
+vec_covered_with_complex <- c(
+  "0", # monotherapy,
+  "Chemotherapy", # just checks >= 1 drug used.
+  "Platinum-containing chemotherapy" 
+)
+
+vec_covered_with <- c(vec_covered_with_simple, vec_covered_with_complex)
+
+n_checked <- dft_poss_app %>%
+  filter(ind_with %in% vec_covered_with) %>%
+  nrow(.)
+
+n_unchecked <- dft_poss_app %>%
+  filter(!(ind_with %in% vec_covered_with) & !is.na(ind_with)) %>%
+  nrow(.)
+
+dfp_unchecked <- dft_with_unchecked <- dft_poss_app %>%
+  filter(!test_all & !is.na(ind_with)) %>%
+  filter(!(ind_with %in% vec_covered_with)) %>%
+  count(ind_with, sort = T)
+
+```
+
+### Concomitant therapy ('with') checks
+
+There are `r nrow(dft_poss_app)` linked indications for the drug exposures we're studying.  Among those,
+
+- `r n_checked` have an "with" entry we've covered in our checks.  Not all the checks are optimal (for example, for "chemotherapy" we just check that at least one conmed was used).
+- `r n_unchecked` have a "with" entry we haven't covered yet.
+
+Among those "with" entries we haven't checked yet, `r sum(pull(dfp_unchecked, n))` are part of a exposure-indication link that is currently passing all tests.  Prioritizing those entries rows is the highest priority in my view.  Here's the list:
+
+
+```{r}
+#| include: true
+dfp_unchecked %>%
+  flextable(.) %>%
+  autofit(.)
+```
+
+  
+
+
+
 ## Issues/concerns
 
 
@@ -1294,8 +1308,6 @@ Notes:
 ### Lock dates
 
 One optimization we could do for our guesses on drug use:  Nobody's drug start date can be after the lock date of the data.  For those with a "maximum possible" over the lock date we could round down to the lock date.
-
-
 
 
 

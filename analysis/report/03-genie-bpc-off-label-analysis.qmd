@@ -314,7 +314,7 @@ dfp_olu_type_cohort %<>%
   rename(` ` = off_label_type) %>%
   flextable(.) %>%
   add_header_row(
-    values = c("", paste0("m=", vec_olu_denoms)),
+    values = c("", paste0("k=", vec_olu_denoms)),
     top = F
   ) %>%
   autofit(.) %>%
@@ -457,6 +457,31 @@ gg_step_cohort_prop
 
 
 
+```{r}
+dft_off_label_cohort_agent <- count_off_label(
+  dft_hdrug_det,
+  group_vars = c('cohort', 'agent')
+) %>%
+  filter(n_off_label > 0) %>%
+  select(-c(prop_off_label))
+```
+
+### R3.4 OLU list - Cohort/agent
+
+The following table shows the number of off label uses by {cohort, agent}:
+
+```{r}
+#| include: true
+dft_off_label_cohort_agent %>%
+  select(cohort, agent, n_off_label) %>%
+  arrange(desc(n_off_label)) %>% # good default.
+  dt_wrapper(.)
+```
+
+
+
+
+
 
 
 
@@ -475,9 +500,9 @@ dt_off_label <- dft_off_label_uses %>%
   dt_wrapper(.)
 ```
 
-### *R3.4 OLU table, sortable
+### *R3.5 OLU list - Cohort/agent/type
 
-The following table shows rows grouped by {cohort, agent, off_label_type}.  For example, a row might show the number of off label uses of capecitabine in the pancreatic cohort, which were due to using a drug before the approval date.
+The following table shows rows grouped by {cohort, agent, off_label_type}, splitting the table rows above by type.  For example, a row might show the number of off label uses of capecitabine in the pancreatic cohort, which were due to using a drug before the approval date.
 
 ```{r}
 #| include: true
@@ -487,6 +512,44 @@ dt_off_label
 **Note:** We had a version of this with only the first drug used as a sanity check.  I think we're past that, so I've removed it, but it can be brought back if you miss it.
 
 
+
+
+
+```{r}
+# Add in the step where the exposure was made off label.
+# Could put this into hdrug det at an earlier stage if desired.
+dft_hdrug_det <- dft_stepwise_new_olu %>% 
+  select(step, new_off_label) %>%
+  unnest(new_off_label) %>%
+  rename(step_lost = step) %>%
+  select(-valid_ind_exists) %>% 
+  left_join(
+    dft_hdrug_det,
+    .,
+    by = c('cohort', "record_id", 'ca_seq', 'regimen_number', 'drug_number', 'agent'),
+    relationship = "one-to-one"
+  )
+  
+dft_off_label_cohort_agent_detail <- count_off_label(
+  dft_hdrug_det,
+  group_vars = c('cohort', 'agent', 'step_lost')
+) %>%
+  filter(n_off_label > 0) %>%
+  select(-c(prop_off_label))
+```
+
+### R3.6 OLU list - Cohort/agent/step
+
+One more variant - here each row is defined by the cohort, agent and the step (or test) where the exposure was determined to be off label.  This means that all potential indications failed to pass once this test was added.
+
+
+```{r}
+#| include: true
+dft_off_label_cohort_agent_detail %>%
+  select(cohort, agent, step_lost, n_off_label) %>%
+  arrange(desc(n_off_label)) %>% # good default.
+  dt_wrapper(.)
+```
 
 
 
@@ -678,6 +741,8 @@ dft_date_compare <- left_join(
 
 
 ### R4.2 Date assumptions
+
+**Note:  This section needs to be repaired still after a code restructure.  Low priority**
 
 Previously we made the most conservative possible assumption on date of drug start.  That is, for each participant, we assumed that their birthday was the last day on their recorded `birth_year`.
 
@@ -1125,49 +1190,194 @@ dft_cape_comp_sum <- dft_cape_compliments %>%
 
 
 
-### R4.7 Drugs given with Capecitabine
 
-This is a generalized answer to the question "Was Capecitabine given with Erlotinib often in the pancreatic cohort?"
 
-The following table lists the drugs which accompany regimens where Capecitabine was given.  If Capecitabine was the only drug used in the regimen we just note "(monotherapy)". The counts are in strata defined by whether the use of capecitabine was valid in that regimen, and which cohort the person belongs to.
+```{r}
+
+# A bit of a hacky helper because we're assuming a dataframe name and creating
+#  a dependence on this environment.  But it works:
+failure_test_helper <- function(
+    cohort_to_pull, agent_to_pull, step_to_pull
+) {
+  rtn <- dft_off_label_cohort_agent_detail %>%
+    filter(cohort %in% cohort_to_pull) %>%
+    filter(agent %in% agent_to_pull) %>%
+    filter(step_lost %in% step_to_pull) %>%
+    pull(n_off_label)
+  
+  if (length(rtn) != 1) {
+    print(rtn)
+    cli_abort("failure_test_helper() failed with {cohort_to_pull}, {agent_to_pull}, {step_to_pull}")
+  }
+  
+  return(rtn)
+}
+
+failure_test_helper("NSCLC", "Bevacizumab", "test_with_carbotaxol")
+  
+
+```
+
+
+### *R4.7 Conmed-based failures
+
+In this section we dig into the exposures which failed when adding a test for conmeds, going case by case for those with a large count for {cohort, agent, test_with_*} (see R3.6).  I have arbitrarily included those combinations with at least 10 cases to start.
+
+#### NSCLC Bevicizumab with Carboplatin/Paclitaxel
+
+There were `r failure_test_helper("NSCLC", "Bevacizumab", "test_with_carbotaxol")` exposures to Bevacizumab in NSCLC which had no valid indications left after we added `test_with_carbotaxol` (testing that carboplatin and paclitaxel were both used, as required by some labels for this drug).  For the rest of this section this is how I will state this for brevity:
+
+- Cohort:  NSCLC
+- Exposure: Bevacizumab
+- Test: `test_with_carbotaxol` (must be used with Carboplatin and Paclitaxel)
+
+
+Conmeds overlapping with these exposures (limited to those with at least 5 uses in this case):
 
 ```{r}
 #| include: true
-dft_cape_comp_sum %>%
+  
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_carbotaxol", 
+  cohort_limit = "NSCLC"
+) %>% 
+  filter(exposures >= 5) %>%
   flextable(.) %>%
-  autofit(.) %>%
-  align(j = 1, align = 'left', part = 'all') %>%
-  merge_v(j = 1:2) %>%
-  valign(j = 1:2, valign = "top") %>%
-  fix_border_issues(.)
+  autofit(.)
 ```
 
-**Notes**
+Observations:
 
-- Erlotinib was not frequently given with Capecitabine in the Pancreatic cohort.  It was given in 2 of the three off label uses in NSCLC.
+- Seems using platinum+pem vs platinum+paclitaxel is a question people are interested in, with somewhat mixed evidence:  https://doi.org/10.1186/s12885-021-08136-5
+- Osi is being given alongside Bev in quite a few of these too.
 
+#### Pancreas, Capecitabine, with chemo
 
+- Cohort:  Pancreas
+- Exposure: Capecitabine
+- Test: `test_with_chemo` = must be used with at least one agent of any kind, so the list below is redundant for now:
 
-
+Conmeds overlapping with these exposures:
 
 ```{r}
-#| eval: false
+#| include: true
 
-# we'll get back to this, just a quick add since Shawn asked.
-dft_hdrug_conmed
-
-dft_stepwise_new_olu %>% 
-  filter(step %in% 'test_with_carbotaxol') %>% 
-  pull(new_off_label) %>% 
-  `[[`(.,1) %>%
-  left_join(., dft_hdrug_conmed, 
-            by = c('cohort', 'record_id', 'ca_seq', 'regimen_number',
-                   'drug_number', 'agent')
-  ) %>%
-  count(cohort, agent, drug_overlaps_vec, sort = T) %>%
-  View(.)
-            
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_chemo", 
+  cohort_limit = "Pancreas"
+) %>% 
+  flextable(.) %>%
+  autofit(.)
 ```
+
+Observations:
+
+- Recall that while the chemo check is higher in our priority system, *all* of these were used before the indication was written.  So this isn't as interesting as a conmed case, to me.
+
+
+#### Breast, Everolimus with Exemestane
+
+- Cohort:  Breast
+- Exposure: Everolimus
+- Test: `test_with_exemestane` 
+
+Conmeds overlapping with these exposures:
+
+```{r}
+#| include: true
+
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_exemestane", 
+  cohort_limit = "Breast"
+) %>% 
+  flextable(.) %>%
+  autofit(.)
+```
+
+Observation:  Fulvestrant seems like a common choice.
+
+
+#### NSCLC, Nabpaclitaxel with carboplatin
+
+- Cohort:  NSCLC
+- Exposure: Nabpaclitaxel
+- Test: `test_with_carboplatin`
+
+Conmeds overlapping with these exposures:
+
+```{r}
+#| include: true
+
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_carboplatin", 
+  cohort_limit = "NSCLC"
+) %>% 
+  flextable(.) %>%
+  autofit(.)
+```
+
+
+
+
+#### Pancreas, irinotecan liposome with folf
+
+- Cohort: Pancreas
+- Exposure: Irinotecan liposome
+- Test: `test_with_folf` (requiring both Fluorouracil and Leucovorin Calcium)
+
+Conmeds overlapping with these exposures:
+
+```{r}
+#| include: true
+
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_folf", 
+  cohort_limit = "Pancreas"
+) %>% 
+  flextable(.) %>%
+  autofit(.)
+```
+
+Observation:  Looks like the most common choice was to drop leucovorin or both.
+
+
+
+#### Pancreas, nabpaclitaxel with gemcitabine
+
+- Cohort: Pancreas
+- Exposure: Nabpaclitaxel
+- Test: `test_with_gemcitabine`
+
+Conmeds overlapping with these exposure:
+
+```{r}
+#| include: true
+
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_gemcitabine", 
+  cohort_limit = "Pancreas",
+  agent_limit = "Nabpaclitaxel"
+) %>% 
+  flextable(.) %>%
+  autofit(.)
+```
+
+
+
+
+
 
 
 
@@ -1223,8 +1433,7 @@ The following table shows a few relevant columns from the `indications.csv` shee
 ```{r}
 #| include: true
 dft_ind_mapped %>% 
-  select(component, regulator, date, condition, with,
-         context, stage_or_status) %>%
+  select(component, regulator, date, condition, with, biomarker, stage_or_status) %>%
   dt_wrapper(.)
 ```
 

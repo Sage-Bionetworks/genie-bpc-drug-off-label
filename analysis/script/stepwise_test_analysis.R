@@ -165,7 +165,7 @@ gg_step_cohort_n <- ggplot(
   scale_x_continuous(
     expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
     n.breaks = 6,
-    name = "Prop off label"
+    name = "Count of off label exposures"
   ) +
   scale_color_vibrant() +
   coord_cartesian(

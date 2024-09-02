@@ -20,6 +20,9 @@ library(flextable)
 library(glue)
 library(lubridate)
 
+library(lme4)
+library(broom.mixed)
+
 library(ggplot2)
 library(khroma)
 library(plotly)
@@ -29,5 +32,6 @@ library(ggtext)
 library(scales)
 library(cowplot)
 library(collapsibleTree)
+library(ggmosaic)
 
 library(cfmisc)

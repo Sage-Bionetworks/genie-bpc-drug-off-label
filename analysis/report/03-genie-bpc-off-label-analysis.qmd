@@ -237,7 +237,7 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 - Of the `r nrow(dft_hdrug_det)` exposures (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
 
 
-### R3.1 Definitions
+### *R3.1 Definitions
 
 We define an **exposure** to be one person using a drug for one block of time.  This is reliant on curation in BPC, so a block of time is pinned to how regimens are curated, but the point to keep in mind is that person X can have multiple exposures to drug Y.
 
@@ -397,7 +397,7 @@ dft_off_label_uses_first_drug <- dft_hdrug_det_first_day %>%
 
 
 
-### R3.3 OLU detailed
+### *R3.3 OLU detailed
 
 Above we presented three <span style="color:#E63746;">broad categories</span> for off label use, this section shows what happens when each <span style="color:#07C592;">individual check</span> is added.  Here is a tree showing how these relate:
 
@@ -466,7 +466,7 @@ dft_off_label_cohort_agent <- count_off_label(
   select(-c(prop_off_label))
 ```
 
-### R3.4 OLU list - Cohort/agent
+### *R3.4 OLU list - Cohort/agent
 
 The following table shows the number of off label uses by {cohort, agent}:
 
@@ -538,7 +538,7 @@ dft_off_label_cohort_agent_detail <- count_off_label(
   select(-c(prop_off_label))
 ```
 
-### R3.6 OLU list - Cohort/agent/step
+### *R3.6 OLU list - Cohort/agent/step
 
 One more variant - here each row is defined by the cohort, agent and the step (or test) where the exposure was determined to be off label.  This means that all potential indications failed to pass once this test was added.
 
@@ -1091,150 +1091,77 @@ gg_nccn_cape
 
 
 ```{r}
-dft_gen_mark <- readr::read_rds(
-  here('data', 'no_ca_seq_filter', 'genomic_sum.rds')
-)
+dir_biomark <- here('data', 'stories', 'biomarker_driven_use')
 
-dfp_crc_biomarkers <- dft_hdrug_det %>% 
-  filter(
-    cohort %in% "CRC", 
-    !valid_ind_exists, 
-    agent %in% c("Trastuzumab", "Vemurafenib")
-  ) %>%
-  group_by(record_id, agent) %>%
-  arrange(regimen_number) %>% 
-  slice(1) %>%
-  ungroup(.) %>%
-  mutate(`Record [reg]` = glue("{record_id} [{regimen_number}]")) %>%
-  left_join(
-    .,
-    dft_gen_mark,
-    by = "record_id"
-  ) %>%
-    mutate(`Record [reg]` = glue("{record_id} [{regimen_number}]")) %>%
-  select(agent, `Record [reg]`, any_BRAF, any_ERBB2) %>%
-  arrange(agent, `Record [reg]`)
+# Trastuzumab stuff first
+dft_tras_model <- readr::read_rds(here(dir_biomark, 'tras_model.rds'))
+gg_tras_tab <- readr::read_rds(here(dir_biomark, 'tras_gg_tab.rds'))
+gg_tras_mosaic <- readr::read_rds(here(dir_biomark, 'tras_gg_mosaic.rds'))
+
+dft_vemura_model <- readr::read_rds(here(dir_biomark, 'vemura_model.rds'))
+gg_vemura_tab <- readr::read_rds(here(dir_biomark, 'vemura_gg_tab.rds'))
+gg_vemura_mosaic <- readr::read_rds(here(dir_biomark, 'vemura_gg_mosaic.rds'))
+
 
 ```
 
 
 ### R4.6 Biomarker driven use
 
-We observed several off label uses of Traztuzumab and Vemurafenib in CRC above.  One hypothesis was that these participants may have had a genomic alteration in BRAF or ERBB2 which could explain the decision to administer these drugs.  The following table provides a flag for each one, ignoring timing entirely.  In other words, a BRAF mutation or amplification (copy number alteration) at any time would result in `TRUE`.  `Record [reg]` is the record ID and regimen number.
+#### Trastuzumab, EBBB2
+
+We observed several off label uses of trastuzumab, trastuzumab emtansine and trastuzumab deruxtecan (we generalize, just writing "Trastuzumab" below).  Because trastuzumab is indicated for HER2 over-expressing breast cancer, we hypothesized that an ERBB2 alteration may prompt a provider to try trastuzumab in other cancers.
+
+NSCLC technically has an indication for trastuzumab deruxtecan in HER2-mutated which was added in 2022.  All the uses of trastuzumab in our cohort happen to not meet this indiation's requirements (time, drug or both), so I'm cheating a bit and treating NSCLC like the other cohorts that have no indications at all (by including it in this analysis).
+
+The following 2x2 tables show the occurence of trastuzumab use (at any time) and ERBB2 alterations (at any time) in all cohort participants, that is those with at least one drug included in our analysis:
+
 
 ```{r}
 #| include: true
-flextable(dfp_crc_biomarkers) %>%
-  autofit(.) %>%
-  flextable::merge_v(j = 1) %>%
-  flextable::valign(valign = "top") %>%
-  fix_border_issues(.)
+#| fig-height: 4
+gg_tras_tab
+```
+
+A mosaic plot is another display option:
+
+```{r}
+#| include: true
+#| fig-height: 5
+gg_tras_mosaic
 ```
 
 **Notes:**
 
-- With CNAs added we see that these drugs are usually accompanied by the expected mutations.
+- Fitting a logistic regression to this data obviously gives a significant result.  I think the raw counts are a convincing case that ERBB2 alterations prompt providers to try trastuzumab.
+- This case remains strong whether we include lung cancer or not.
 
+#### Vermurafenib, BRAF
 
+Similar to the above, we hypothesized that off label uses of Vemurafenib may be motivated by a BRAF alteration.  All six cohorts are included in this analysis because there are no indications in any of them (melanoma is the BRAF-driven indication motivating the hypothesis).
 
-
-```{r}
-ft1 <- dft_hdrug_det %>%
-  count(agent, sort = T) %>%
-  slice(1:3) %>%
-  flextable::flextable(.) %>%
-  autofit(.)
-
-ft2 <- dft_hdrug_det %>%
-  count(agent, sort = T) %>%
-  slice(4:6) %>%
-  flextable::flextable(.) %>%
-  autofit(.)
-
-grob1 <- gen_grob(ft1)
-grob2 <- gen_grob(ft2)
-
-cowplot::plot_grid(
-  grob1, grob2
-)
-
-# A sloppy function structurally that I keep finding a need for:
-# Plot a 2x2 table (epi style) as a ggplot2 object.
-plot_two_by_two <- function(
-    dat,
-    var1,
-    var2
-) {
-  tabyl(dat, var1, var2) %>%
-    adorn_totals(where = "both")
-  
-}
-    
-
-plot_two_by_two
-
-png_f_3 <- tempfile(fileext = "test_plot.png")
-z <- summarizor(iris, by = "Species") |>
-  as_flextable(spread_first_col = TRUE) #|>
-  # flextable::color(color = "gray", part = "all")
-gg <- ggplot(data = iris, aes(Sepal.Length, Petal.Width)) +
-  annotation_custom(
-    gen_grob(z, scaling = "full"),
-    xmin  = 4.5, xmax = 7.5, ymin = 0.25, ymax = 2.25) +
-  geom_point() +
-  theme_minimal()
-ggsave(plot = gg, filename = 'test_plot_ggsave.png', width = 7, height = 7, units = 'in')
-
-
-```
-
-
-
-
-
-
-
+2x2 tables:
 
 ```{r}
-dft_cape_regimens <- dft_hdrug_det %>% 
-  group_by(cohort, record_id, ca_seq, regimen_number) %>%
-  mutate(
-    regimen_contains_cape = any(agent %in% "Capecitabine"),
-    regimen_contains_invalid_cape = any(agent %in% "Capecitabine" & !valid_ind_exists)
-  ) %>%
-  ungroup(.) %>%
-  filter(regimen_contains_cape)
-
-dft_cape_compliments <- dft_cape_regimens %>%
-  group_by(cohort, record_id, ca_seq, regimen_number) %>%
-  summarize(
-    taken_with = paste(sort(agent[agent != "Capecitabine"]), collapse = ", "),
-    .groups = "drop"
-  ) %>%
-  mutate(taken_with = if_else(taken_with %in% "", "(monotherapy)", taken_with))
-
-# Put the flag back in for whether these were valid/invalid.
-dft_cape_compliments <- dft_cape_regimens %>%
-  filter(agent %in% "Capecitabine") %>%
-  select(record_id, ca_seq, regimen_number, cape_use_valid = valid_ind_exists) %>%
-  left_join(
-    dft_cape_compliments,
-    .,
-    by = c('record_id', 'ca_seq', 'regimen_number'),
-    relationship = "one-to-one"
-  ) 
-
-dft_cape_comp_sum <- dft_cape_compliments %>%
-  count(cape_use_valid, cohort, taken_with) %>%
-  arrange(cape_use_valid, cohort, desc(n))
-  
+#| include: true
+#| fig-height: 4
+gg_vemura_tab
 ```
 
-**Notes**
+Mosaic plot:
 
-- Vemurafenib looks universally accompanied by BRAF.  Trastuzumab has some with neither.
-- This currently only includes mutations.  We can include copy number alterations or fusions if appropriate, which may explain some of the results.
-- The specific mutation is also not yet considered.  Is limiting to V600E better for BRAF?
+```{r}
+#| include: true
+#| fig-height: 5
+gg_vemura_mosaic
+```
+
+**Notes:**
+
+- Definitely a case where the raw counts tell the story:  out of 4132 BRAF-negative participants no vemurafenib use was observed.  Out of 216 BRAF-positive cases, 11 tried vemurafenib. 
+
+
+
 
 
 

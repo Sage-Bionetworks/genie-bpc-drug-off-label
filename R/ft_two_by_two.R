@@ -1,6 +1,7 @@
 # A sloppy function structurally that I keep finding a need for:
-# Plot a 2x2 table (epi style) as a ggplot2 object.
-plot_two_by_two <- function(
+# Make a very rigid 2x2 flextable object.
+# The reason I want this is making a grid of flextable-based grobs.
+ft_two_by_two <- function(
     dat,
     var1,
     var2,
@@ -49,7 +50,8 @@ plot_two_by_two <- function(
     ft <- ft |> 
       add_body_row(top = F, values = c("", rep(or_str, 4))) |>
       merge_at(i = 4, j = 2:5) |>
-      italic(i = 4) |>
+      # Had to take this away because it was causing plotting bugs:
+      # italic(i = 4) |>
       align(i = 4, align = "center")
   }
   

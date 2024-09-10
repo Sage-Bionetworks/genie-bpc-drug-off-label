@@ -1435,7 +1435,8 @@ vec_covered_with_complex <- c(
   "Platinum-containing chemotherapy",
   "Platinum-doublet",
   "Ipilimumab AND Platinum doublet",
-  "Carboplatin AND (Paclitaxel OR nab-Paclitaxel)"
+  "Carboplatin AND (Paclitaxel OR nab-Paclitaxel)",
+  "Pemetrexed AND Platinum agent"
 )
 
 vec_covered_with <- c(vec_covered_with_simple, vec_covered_with_complex)

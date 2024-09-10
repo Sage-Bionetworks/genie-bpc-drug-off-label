@@ -72,7 +72,7 @@ add_check_plat <- function(
       test_with_plat = case_when(
         is.na(ind_with) ~ T, 
         !(ind_with %in% "Platinum-containing chemotherapy") ~ T, 
-        .has_drug ~ T,
+        .has_drug_1 ~ T,
         T ~ F
       )
     )

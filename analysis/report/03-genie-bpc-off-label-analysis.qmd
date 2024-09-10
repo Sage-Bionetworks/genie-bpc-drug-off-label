@@ -1308,6 +1308,32 @@ get_overlaps_by_step(
 
 
 
+#### Breast, pertuzumab with trastuzumab and chemo
+
+- Cohort: Breast
+- Exposure: Pertuzumab
+- Test: `test_with_tras_chemo` (Requires trastuzumab and chemotherapy.  We just check that at least one additional drug was used for chemo.)
+
+Conmeds overlapping with these exposures:
+
+```{r}
+#| include: true
+
+get_overlaps_by_step(
+  dft_stepwise_new_olu, 
+  dat_hdrug_conmed = dft_hdrug_conmed,
+  fail_step = "test_with_tras_chemo", 
+  cohort_limit = "Breast",
+  agent_limit = "Pertuzumab"
+) %>% 
+  flextable(.) %>%
+  autofit(.)
+```
+
+*Notes:* 
+
+- Using pertuzumab + trastuzumab without any additional drugs was by far the most common choice, rather than a THP regimen or similar.
+
 
 #### Pancreas, irinotecan liposome with folf
 
@@ -1340,7 +1366,7 @@ Observation:  Looks like the most common choice was to drop leucovorin or both.
 - Exposure: Nabpaclitaxel
 - Test: `test_with_gemcitabine`
 
-Conmeds overlapping with these exposure:
+Conmeds overlapping with these exposures:
 
 ```{r}
 #| include: true
@@ -1355,8 +1381,6 @@ get_overlaps_by_step(
   flextable(.) %>%
   autofit(.)
 ```
-
-
 
 
 
@@ -1436,7 +1460,8 @@ vec_covered_with_complex <- c(
   "Platinum-doublet",
   "Ipilimumab AND Platinum doublet",
   "Carboplatin AND (Paclitaxel OR nab-Paclitaxel)",
-  "Pemetrexed AND Platinum agent"
+  "Pemetrexed AND Platinum agent",
+  "Trastuzumab AND Chemotherapy"
 )
 
 vec_covered_with <- c(vec_covered_with_simple, vec_covered_with_complex)
@@ -1463,7 +1488,7 @@ There are `r nrow(dft_poss_app)` linked indications for the drug exposures we're
 - `r n_checked` have an "with" entry we've covered in our checks.  Not all the checks are optimal (for example, for "chemotherapy" we just check that at least one conmed was used).
 - `r n_unchecked` have a "with" entry we haven't covered yet.
 
-Among those "with" entries we haven't checked yet, `r sum(pull(dfp_unchecked, n))` are part of a exposure-indication link that is currently passing all tests.  Prioritizing those entries rows is the highest priority in my view.  Here's the list:
+Among those "with" entries we haven't checked yet, `r sum(pull(dfp_unchecked, n))` are part of a exposure-indication link that is currently passing all tests.  Here's the list:
 
 
 ```{r}
@@ -1472,6 +1497,11 @@ dfp_unchecked %>%
   flextable(.) %>%
   autofit(.)
 ```
+
+*Notes:*
+
+- We can't check prednisone use because it's not collected in BPC.
+- "Chemoradiotherapy" checking is probably hard or impossible in BPC, leaving it alone for now due to the low perceived risk/reward.
 
   
 

@@ -75,7 +75,36 @@ add_check_plat <- function(
 }
 
 
-
+add_check_plat_doublet <- function(
+    dat_poss_app
+) {
+  # source (NSCLC only): https://www.nature.com/articles/s41598-017-13724-2
+  plat_list <- c("Oxaliplatin", "Cisplatin", "Carboplatin")
+  doublet_list <- c("Paclitaxel", "Docetaxel", "Gemcitabine Hydrochloride",
+                    "Vinorelbine", "Irinotecan", "Pemetrexed")
+                    
+  
+  dat_poss_app %<>%
+    mutate(
+      .has_drug = map_lgl(
+        .x = drug_overlaps,
+        # all() only has real meaning when length(agent_req) > 1.
+        .f = \(z) any(plat_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_plat = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Platinum-containing chemotherapy") ~ T, 
+        .has_drug ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-.has_drug)
+  
+  return(dat_poss_app)
+}
 
 
 

@@ -102,7 +102,7 @@ dft_hdrug_all %<>% add_dob_int_hdrug(.)
 # )
 
 # This takes quite a while to run.  That's ok, we're not in a huge hurry for
-#   something we'll be doing once.
+#   something we'll be doing once - it's about one minute on a personal computer.
 # A solution where you join then filter is probably going to be faster.
 list_overlaps <- dft_hdrug_cohort %>%
   group_by(row_number()) %>%
@@ -135,6 +135,26 @@ readr::write_rds(
   dft_hdrug_cohort,
   here('data', 'cohort', 'hdrug_with_conmeds.rds')
 )
+
+
+# We will also build an "index" of drugs, which is very useful for 
+#   making sure we spell things right.  It get confusing with the indications
+#   name and the data ones (conmed ones) being different.
+dft_drug_index <- list_overlaps %>% 
+  unlist %>% 
+  tibble(agent = .) %>% 
+  count(agent, name = "n_overlap")
+
+dft_drug_index <- dft_hdrug_cohort %>%
+  count(agent, name = "n_exposure") %>%
+  full_join(., dft_drug_index, by = 'agent')
+
+readr::write_rds(
+  dft_drug_index,
+  here('data', 'cohort', 'drug_index.rds')
+)
+
+
 
 
   

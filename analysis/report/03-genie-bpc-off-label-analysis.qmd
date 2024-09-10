@@ -10,6 +10,7 @@ format:
   html:
     embed-resources: true
     toc: true
+    toc-depth: 4
     theme: sandstone 
 execute:
   echo: false
@@ -1106,7 +1107,7 @@ gg_vemura_mosaic <- readr::read_rds(here(dir_biomark, 'vemura_gg_mosaic.rds'))
 ```
 
 
-### R4.6 Biomarker driven use
+### *R4.6 Biomarker driven use
 
 #### Trastuzumab, EBBB2
 
@@ -1158,7 +1159,7 @@ gg_vemura_mosaic
 
 **Notes:**
 
-- Definitely a case where the raw counts tell the story:  out of 4132 BRAF-negative participants no vemurafenib use was observed.  Out of 216 BRAF-positive cases, 11 tried vemurafenib. 
+- Definitely a case where the raw counts tell the story:  out of 4132 BRAF-negative participants no vemurafenib use was observed.  Out of 216 BRAF-positive cases, 11 tried vemurafenib.
 
 
 

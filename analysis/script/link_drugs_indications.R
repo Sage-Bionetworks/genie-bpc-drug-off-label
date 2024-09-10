@@ -20,6 +20,13 @@ dft_hdrug_cohort_lim <- readr::read_rds(
   here('data', 'cohort', 'hdrug_with_conmeds.rds')
 )
 
+# This is NOT needed to do any of the linking/computation, but it's helpful when
+#   building out new tests based on conmeds.
+dft_drug_index <- readr::read_rds(
+  here('data', 'cohort', 'drug_index.rds')
+)
+
+
 
 # Fix up the date column from the indications sheet:
 dft_ind_lim %<>% 
@@ -76,6 +83,9 @@ for (k in seq_len(nrow(dft_simple_with_tests))) {
 dft_poss_app %<>% add_check_monotherapy(.) 
 dft_poss_app %<>% add_check_chemo(.)
 dft_poss_app %<>% add_check_plat(.)
+dft_poss_app %<>% add_check_plat_doublet(.)
+dft_poss_app %<>% add_check_ipilum_pd(.)
+
 
 
 

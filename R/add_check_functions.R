@@ -75,35 +75,79 @@ add_check_plat <- function(
 }
 
 
-add_check_plat_doublet <- function(
+# Adds in the drug_1 and drug_2 flags for platinum doublets.  Re-used enough
+#   to be its own function.
+platinum_doublet_helper <- function(
     dat_poss_app
 ) {
-  # source (NSCLC only): https://www.nature.com/articles/s41598-017-13724-2
   plat_list <- c("Oxaliplatin", "Cisplatin", "Carboplatin")
   doublet_list <- c("Paclitaxel", "Docetaxel", "Gemcitabine Hydrochloride",
-                    "Vinorelbine", "Irinotecan", "Pemetrexed")
-                    
+                    "Vinorelbine", "Irinotecan", "Pemetrexed Disodium",
+                    "Tegafurgimeraciloteracil Potassium")
   
   dat_poss_app %<>%
     mutate(
-      .has_drug = map_lgl(
+      .has_drug_1 = map_lgl(
         .x = drug_overlaps,
-        # all() only has real meaning when length(agent_req) > 1.
         .f = \(z) any(plat_list %in% z)
+      ),
+      .has_drug_2 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(doublet_list %in% z)
       )
-    ) %>%
+    )
+  
+  return(dat_poss_app)
+  
+}
+
+add_check_plat_doublet <- function(
+    dat_poss_app
+) {
+  dat_poss_app %<>%
+    platinum_doublet_helper %>%
     mutate(
-      test_with_plat = case_when(
+      test_with_plat_doublet = case_when(
         is.na(ind_with) ~ T, 
-        !(ind_with %in% "Platinum-containing chemotherapy") ~ T, 
-        .has_drug ~ T,
+        !(ind_with %in% "Platinum-doublet") ~ T, 
+        .has_drug_1 & .has_drug_2 ~ T,
         T ~ F
       )
     )
   
-  dat_poss_app %<>% select(-.has_drug)
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
   
   return(dat_poss_app)
+}
+
+
+add_check_ipilum_pd <- function(
+    dat_poss_app
+) {
+  ipi_list <- c("Ipilimumab")
+  
+  dat_poss_app %<>%
+    platinum_doublet_helper %>%
+    mutate(
+      .has_drug_3 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(ipi_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_ipilum_pd = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Ipilimumab AND Platinum doublet") ~ T, 
+        .has_drug_1 & .has_drug_2 & .has_drug_3 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+  
+  
 }
 
 

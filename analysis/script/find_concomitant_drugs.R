@@ -149,6 +149,8 @@ dft_drug_index <- dft_hdrug_cohort %>%
   count(agent, name = "n_exposure") %>%
   full_join(., dft_drug_index, by = 'agent')
 
+dft_drug_index %<>% arrange(agent)
+
 readr::write_rds(
   dft_drug_index,
   here('data', 'cohort', 'drug_index.rds')

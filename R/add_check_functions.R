@@ -238,6 +238,42 @@ add_check_tras_chemo <- function(
 }
 
 
+aromatase_helper <- function(
+    dat_poss_app
+) {
+  d1_list <- c("Anastrozole", "Letrozole", "Exemestane")
+  
+  dat_poss_app %<>%
+    mutate(
+      .has_drug_1 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d1_list %in% z)
+      )
+    )
+  
+  return(dat_poss_app)
+}
+
+add_check_ai <- function(
+    dat_poss_app
+) {
+  dat_poss_app %<>%
+    aromatase_helper %>%
+    mutate(
+      test_with_ai = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Aromatase inhibitor") ~ T, 
+        .has_drug_1 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+}
+
+
 
 
 

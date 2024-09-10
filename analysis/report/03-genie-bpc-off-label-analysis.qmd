@@ -1432,7 +1432,10 @@ vec_covered_with_simple <- dft_simple_with_tests %>% pull(with_req) %>% unique
 vec_covered_with_complex <- c(
   "0", # monotherapy,
   "Chemotherapy", # just checks >= 1 drug used.
-  "Platinum-containing chemotherapy" 
+  "Platinum-containing chemotherapy",
+  "Platinum-doublet",
+  "Ipilimumab AND Platinum doublet",
+  "Carboplatin AND (Paclitaxel OR nab-Paclitaxel)"
 )
 
 vec_covered_with <- c(vec_covered_with_simple, vec_covered_with_complex)

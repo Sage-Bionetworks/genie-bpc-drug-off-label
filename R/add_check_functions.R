@@ -146,10 +146,38 @@ add_check_ipilum_pd <- function(
   dat_poss_app %<>% select(-matches("^\\.has_drug"))
   
   return(dat_poss_app)
-  
-  
 }
 
+add_check_carbotaxol_nab <- function(
+    dat_poss_app
+) {
+  d1_list <- c("Carboplatin")
+  d2_list <- c("Nabpaclitaxel", "Paclitaxel")
+  
+  dat_poss_app %<>%
+    mutate(
+      .has_drug_1 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d1_list %in% z)
+      ),
+      .has_drug_2 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d2_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_carbotaxol_nab = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Carboplatin AND (Paclitaxel OR nab-Paclitaxel)") ~ T, 
+        .has_drug_1 & .has_drug_2 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+}
 
 
 

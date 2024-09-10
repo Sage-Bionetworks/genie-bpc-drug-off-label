@@ -77,7 +77,7 @@ add_check_plat <- function(
       )
     )
   
-  dat_poss_app %<>% select(-.has_drug)
+  dat_poss_app %<>% select(-matches("^\\.has_drug_1"))
   
   return(dat_poss_app)
 }
@@ -209,6 +209,36 @@ add_check_pem_plat <- function(
   
   return(dat_poss_app)
 }
+
+add_check_tras_chemo <- function(
+    dat_poss_app
+) {
+  d1_list <- "Trastuzumab"
+  # chemo is handled below with num_overlaps (relaxed check)
+  
+  dat_poss_app %<>%
+    mutate(
+      .has_drug_1 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d1_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_tras_chemo = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Trastuzumab AND Chemotherapy") ~ T, 
+        .has_drug_1 & num_overlaps >= 2 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+}
+
+
+
 
 
 

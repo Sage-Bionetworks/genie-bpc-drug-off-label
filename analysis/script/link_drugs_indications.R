@@ -87,6 +87,8 @@ dft_poss_app %<>% add_check_plat_doublet(.)
 dft_poss_app %<>% add_check_ipilum_pd(.)
 dft_poss_app %<>% add_check_carbotaxol_nab(.)
 dft_poss_app %<>% add_check_pem_plat(.)
+dft_poss_app %<>% add_check_tras_chemo(.)
+
 
 
 

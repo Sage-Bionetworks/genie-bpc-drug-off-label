@@ -89,6 +89,9 @@ dft_poss_app %<>% add_check_carbotaxol_nab(.)
 dft_poss_app %<>% add_check_pem_plat(.)
 dft_poss_app %<>% add_check_tras_chemo(.)
 dft_poss_app %<>% add_check_ai(.)
+dft_poss_app %<>% add_check_ai_tamox(.)
+dft_poss_app %<>% add_check_pd_nivo(.)
+dft_poss_app %<>% add_check_fluor_iri_or_oxal(.)
 
 
 

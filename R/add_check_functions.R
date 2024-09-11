@@ -273,6 +273,95 @@ add_check_ai <- function(
   return(dat_poss_app)
 }
 
+add_check_ai_or_tamox <- function(
+    dat_poss_app
+) {
+  d2_list <- "Tamoxifen Citrate"
+  
+  dat_poss_app %<>%
+    aromatase_helper %>%
+    mutate(
+      .has_drug_2 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d2_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_ai_tamox = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Aromatase inhibitor OR Tamoxifen") ~ T, 
+        .has_drug_1 | .has_drug_2 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+}
+
+
+add_check_pd_nivo <- function(
+    dat_poss_app
+) {
+  d2_list <- "Nivolumab"
+  
+  dat_poss_app %<>%
+    platinum_doublet_helper %>%
+    mutate(
+      .has_drug_2 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d2_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_pd_nivo = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Nivolumab AND Platinum doublet") ~ T, 
+        .has_drug_1 | .has_drug_2 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+}
+
+
+# A and B or A and C = A and (B or C)
+add_check_fluor_iri_or_oxal<- function(
+    dat_poss_app
+) {
+  # https://go.drugbank.com/categories/DBCAT003851
+  d1_list <- c("Capecitabine", "Fluorouracil", "Tegafurgimeraciloteracil Potassium")
+  d2_list <- c("Irinotecan Hydrochloride", "Oxaliplatin")
+  
+  dat_poss_app %<>%
+    platinum_doublet_helper %>%
+    mutate(
+      .has_drug_1 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d1_list %in% z)
+      ),
+      .has_drug_2 = map_lgl(
+        .x = drug_overlaps,
+        .f = \(z) any(d2_list %in% z)
+      )
+    ) %>%
+    mutate(
+      test_with_fluor_iri_or_oxal = case_when(
+        is.na(ind_with) ~ T, 
+        !(ind_with %in% "Fluoropyrimidine AND Irinotecan OR Fluoropyrimidine AND Oxaliplatin") ~ T, 
+        .has_drug_1 & .has_drug_2 ~ T,
+        T ~ F
+      )
+    )
+  
+  dat_poss_app %<>% select(-matches("^\\.has_drug"))
+  
+  return(dat_poss_app)
+}
 
 
 

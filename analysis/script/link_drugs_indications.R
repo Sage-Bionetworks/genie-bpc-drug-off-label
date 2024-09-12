@@ -20,6 +20,11 @@ dft_hdrug_cohort_lim <- readr::read_rds(
   here('data', 'cohort', 'hdrug_with_conmeds.rds')
 )
 
+# Add the biomarker lists into the cohort data:
+dft_bio <- readr::read_rds(
+  here('data', 'cohort', 'biomarker_flags', 'negative_flags_list.rds')
+)
+
 # This is NOT needed to do any of the linking/computation, but it's helpful when
 #   building out new tests based on conmeds.
 dft_drug_index <- readr::read_rds(

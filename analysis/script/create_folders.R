@@ -12,3 +12,4 @@ fs::dir_create(here('data', 'warner_materials'))
 fs::dir_create(here('data', 'linked_approvals'))
 fs::dir_create(here('data', 'linked_approvals', 'stepwise'))
 
+fs::dir_create(here('data', 'cohort', 'biomarker_flags'))

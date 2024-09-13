@@ -22,7 +22,7 @@ source(here('analysis', 'script', 'link_drugs_indications.R'))
 source(here('analysis', 'script', 'stepwise_test_analysis.R'))
 source(here('analysis', 'script', 'stepwise_tree_explanation.R'))
 
-source(here('analysis', 'script', 'scrape_guidelines.R'))
+source(here('analysis', 'script', 'scrape_guidelines_panc_cape.R'))
 
 # no longer an rmarkdown doc:
 # rmarkdown::render(

@@ -63,6 +63,7 @@ dft_poss_app %<>%
 dft_poss_app %<>%
   add_check_biomarker_simple("HR+")
 
+# We don't have a HER2- flag yet so this does nothing:
 dft_poss_app %<>%
   add_check_biomarker_simple("HR+ and HER2-", c("HR+", "HER2-"))
 

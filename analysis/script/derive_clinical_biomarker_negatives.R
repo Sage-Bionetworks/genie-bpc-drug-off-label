@@ -85,6 +85,8 @@ dft_bca_negflag <- dft_ca_ind_breast %>%
     `not_HR+` = `not_ER+` & `not_PR+`,
     
     `not_HER2+` = ca_bca_her_summ %in% vec_normal_her2 & !erbb2_amp,
+    
+    `not_HER2-` = ca_bca_her_summ %in% "Positive/elevated/amplified" | erbb2_amp,
     # They definitely do NOT have TNBC if they have any positives at all.
     `not_TNBC` = ca_bca_er %in% "Positive/elevated" |
       ca_bca_pr %in% "Positive/elevated" |

@@ -10,7 +10,7 @@ add_check_biomarker_simple <- function(
     test_name = NULL,
     verbose_results = T
 ) {
-  if (!any(dat_poss_app$biomarker %in% ind_sheet_bio_req)) {
+  if (!any(dat_poss_app$ind_biomarker %in% ind_sheet_bio_req)) {
     cli_warn("There are no rows with biomarker = {ind_sheet_bio_req} - typo?")
   }
   
@@ -21,7 +21,7 @@ add_check_biomarker_simple <- function(
   if (is.null(test_name)) {
     # default:  use the agent_req name.
     test_name = paste0(
-      "test_with_", 
+      "test_bio_", 
       tolower(
         str_replace_all(
           paste(
@@ -36,14 +36,14 @@ add_check_biomarker_simple <- function(
   
   dat_poss_app %<>%
     mutate(
-      .does_not_meet = map_lgl(
-        .x = ind_biomarker,
+      .violation = map_lgl(
+        .x = biomark_neg,
         .f = \(z) any(neg_flags_violating %in% z)
       ),
       .test_temp = case_when(
-        is.na(ind_sheet_bio_req) ~ T, 
+        is.na(ind_biomarker) ~ T, 
         !(ind_biomarker %in% ind_sheet_bio_req) ~ T,
-        .does_not_meet ~ F,
+        .violation ~ F,
         T ~ T
       )
     )
@@ -52,17 +52,17 @@ add_check_biomarker_simple <- function(
     # it would be odd (not impossible) if a drug we're check had NO overlapping uses in the data.
     verbose_dat <- dat_poss_app %>%
       filter(
-        !is.na(ind_with),
-        ind_with %in% with_req
+        !is.na(ind_biomarker),
+        ind_biomarker %in% ind_sheet_bio_req 
       )
     nrow_tot <- nrow(verbose_dat)
     nrow_passed <- nrow(filter(verbose_dat, .test_temp))
     nrow_failed <- nrow(filter(verbose_dat, !.test_temp))
-    cli_inform("Of the {nrow_tot} rows with ind_biomarker = {ind_sheet_bio_req}, {nrow_passed} did not have {neg_flags_violating} (passing) and {nrow_failed} did (failing).")
+    cli_inform("Of the {nrow_tot} rows with ind_biomarker = {ind_sheet_bio_req}, {nrow_failed} were definitely not {neg_flags_violating} (failing) and {nrow_passed} were (passing).")
   }
   
   dat_poss_app %<>%
-    select(-.has_drug) %>%
+    select(-.violation) %>%
     rename({{test_name}} := .test_temp)
   
   return(dat_poss_app)

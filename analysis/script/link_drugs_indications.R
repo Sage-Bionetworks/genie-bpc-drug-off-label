@@ -30,13 +30,6 @@ dft_hdrug_cohort_lim <- left_join(
   by = c('cohort', 'record_id')
 )
 
-# This is NOT needed to do any of the linking/computation, but it's helpful when
-#   building out new tests based on conmeds.
-dft_drug_index <- readr::read_rds(
-  here('data', 'cohort', 'drug_index.rds')
-)
-
-
 
 # Fix up the date column from the indications sheet:
 dft_ind_lim %<>% 
@@ -60,6 +53,34 @@ dft_poss_app <- make_possible_indication_cohort(
 
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) 
+
+
+# Obviously these biomarker tests can be parsed out in the future.
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    "HER2+"
+  )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    "HR+"
+  )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    "HR+ and HER2-", c("HR+", "HER2-")
+  )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    "ER+"
+  )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    "TNBC"
+  )
 
 
 dft_simple_with_tests <- readr::read_rds(
@@ -103,7 +124,6 @@ dft_poss_app %<>% add_check_ai_tamox(.)
 dft_poss_app %<>% add_check_pd_nivo(.)
 dft_poss_app %<>% add_check_fluor_iri_or_oxal(.)
 
-dft_poss_app
 
 
 

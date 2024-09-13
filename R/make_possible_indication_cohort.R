@@ -12,7 +12,8 @@ make_possible_indication_cohort <- function(
       dx_drug_start_int,
       dx_drug_end_or_lastadm_int,
       drug_overlaps,
-      num_overlaps
+      num_overlaps,
+      biomark_neg
     )
   
   dat_ind %<>%
@@ -22,6 +23,7 @@ make_possible_indication_cohort <- function(
       stage_or_status,
       ind_with = with,
       ind_date = date,
+      ind_biomarker = biomarker
     ) %>%
     mutate(test_ind_exists = T)
   

@@ -24,6 +24,11 @@ dft_hdrug_cohort_lim <- readr::read_rds(
 dft_bio <- readr::read_rds(
   here('data', 'cohort', 'biomarker_flags', 'negative_flags_list.rds')
 )
+dft_hdrug_cohort_lim <- left_join(
+  dft_hdrug_cohort_lim,
+  dft_bio,
+  by = c('cohort', 'record_id')
+)
 
 # This is NOT needed to do any of the linking/computation, but it's helpful when
 #   building out new tests based on conmeds.
@@ -97,6 +102,8 @@ dft_poss_app %<>% add_check_ai(.)
 dft_poss_app %<>% add_check_ai_tamox(.)
 dft_poss_app %<>% add_check_pd_nivo(.)
 dft_poss_app %<>% add_check_fluor_iri_or_oxal(.)
+
+dft_poss_app
 
 
 

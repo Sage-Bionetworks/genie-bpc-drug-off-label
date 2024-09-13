@@ -58,29 +58,19 @@ dft_poss_app <- dft_poss_app %>%
 # Obviously these biomarker tests can be parsed out in the future.
 
 dft_poss_app %<>%
-  add_check_biomarker_simple(
-    "HER2+"
-  )
+  add_check_biomarker_simple("HER2+")
 
 dft_poss_app %<>%
-  add_check_biomarker_simple(
-    "HR+"
-  )
+  add_check_biomarker_simple("HR+")
 
 dft_poss_app %<>%
-  add_check_biomarker_simple(
-    "HR+ and HER2-", c("HR+", "HER2-")
-  )
+  add_check_biomarker_simple("HR+ and HER2-", c("HR+", "HER2-"))
 
 dft_poss_app %<>%
-  add_check_biomarker_simple(
-    "ER+"
-  )
+  add_check_biomarker_simple("ER+")
 
 dft_poss_app %<>%
-  add_check_biomarker_simple(
-    "TNBC"
-  )
+  add_check_biomarker_simple("TNBC")
 
 
 dft_simple_with_tests <- readr::read_rds(

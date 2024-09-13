@@ -10,6 +10,7 @@ library(dplyr)
 library(tidyr)
 library(janitor)
 library(forcats)
+library(data.table) # mostly for fread
 
 library(here)
 library(stringr)

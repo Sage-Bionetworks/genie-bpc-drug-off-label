@@ -18,17 +18,6 @@ readr::write_rds(
 )
 
 
-
-# We want to populate this so it matches up with the cohort of people we're analyzing.  To do so, we load up the hdrug data:
-# Load the hdrug cohort data:
-dft_hdrug_cohort_lim <- readr::read_rds(
-  here('data', 'cohort', 'hdrug_with_conmeds.rds')
-)
-
-dft_hdrug_cohort_lim %>% 
-  select(cohort, record_id) %>% 
-  distinct(.)
-
   
 dft_negflags_list <- dft_negflags %>%
   group_by(cohort, record_id) %>%
@@ -39,6 +28,8 @@ dft_negflags_list <- dft_negflags %>%
     .groups = "drop"
   )
 
+dft_negflags_list %<>% fix_cohort_names(.)
+
 # We want to populate this so it matches up with the cohort of people we're analyzing.  To do so, we load up the hdrug data:
 # Load the hdrug cohort data:
 dft_skeleton <- readr::read_rds(
@@ -47,9 +38,8 @@ dft_skeleton <- readr::read_rds(
   select(cohort, record_id) %>% 
   distinct(.)
 
-dft_negflags_list <- dft_skeleton %>%
-  left_join(
-    .,
+dft_negflags_list <- left_join(
+    dft_skeleton,
     dft_negflags_list,
     by = c("cohort", 'record_id')
   )

@@ -1430,9 +1430,9 @@ dft_biomarker_expansions %>%
 
 
 
+## Appendices
 
-
-## Indications sheet
+### Indications sheet
 
 The following table shows a few relevant columns from the `indications.csv` sheet.  This is not filtered, so it contains approvals from other regulators and drugs we've excluded from our analysis.
 
@@ -1444,8 +1444,25 @@ dft_ind_mapped %>%
 ```
 
 
+```{r}
+dft_drug_index <- readr::read_rds(
+  here('data', 'cohort', 'drug_index.rds')
+)
+dft_drug_index %<>%
+  replace_na(list(n_exposure = 0, n_overlap = 0))
+```
 
-## Coverage of checks
+### Drug index
+
+This shows the drug names that appear in our cohort.  In addition to the exposures (`n_exposure`) we also show the drugs which overlap with the exposures (`n_overlap`), important for conmed checks.  Overlaps can, of course, be older drugs which would not make it through our filters for exposures.
+
+```{r}
+dft_drug_index %>%
+  dt_wrapper(.)
+```
+
+
+### Coverage of checks
 
 
 
@@ -1485,7 +1502,7 @@ dfp_unchecked <- dft_with_unchecked <- dft_poss_app %>%
 
 ```
 
-### Concomitant therapy ('with') checks
+#### Concomitant therapy ('with') checks
 
 There are `r nrow(dft_poss_app)` linked indications for the drug exposures we're studying.  Among those,
 
@@ -1511,10 +1528,10 @@ dfp_unchecked %>%
 
 
 
-## Issues/concerns
+### Issues/concerns
 
 
-### Unused conditions
+#### Unused conditions
 
 The Warner `indications.csv` sheet contains many conditions which didn't seem to map to any BPC cohort are:
 
@@ -1534,14 +1551,12 @@ Notes:
 - The most important condition which is excluded is `"<NONE>"`.  We will need to discuss what those rows represent. 
 - Not all of these conditions describe a drug used in the BPC, and not all of them describe FDA indications (which is our first target).
 
-### Lock dates
-
-One optimization we could do for our guesses on drug use:  Nobody's drug start date can be after the lock date of the data.  For those with a "maximum possible" over the lock date we could round down to the lock date.
 
 
 
 
-### Miscellaneous from Mar 2024
+
+#### Miscellaneous from Mar 2024
 
 
 ```{r}
@@ -1606,10 +1621,3 @@ dat_prostate_ca_ind %>%
 
 
 
-
-## Possible future work 
-
-- Bring in genomic information for:
-  - TMB in prostate.
-- Add in checks for TNBC and possibly castrate-resistant prostate cancer.  The second one is a big dicey because the med onc notes are imperfectly used.
-  

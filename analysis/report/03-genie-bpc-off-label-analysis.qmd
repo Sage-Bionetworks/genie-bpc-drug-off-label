@@ -112,8 +112,14 @@ dft_simple_with_tests <- readr::read_rds(
 
 ```{r}
 # scraped data on capecitabine:
-dft_nccn_sum <- readr::read_rds(
-  here('data', 'nccn_panc_capecitabine_sum.rds')
+dft_nccn_sum_panc <- readr::read_rds(
+  here('data', 'guideline_parse', 'nccn_panc_capecitabine_sum.rds')
+)
+dft_nccn_sum_colon <- readr::read_rds(
+  here('data', 'guideline_parse', 'nccn_colon_cape_sum.rds')
+)
+dft_nccn_sum_rectal <- readr::read_rds(
+  here('data', 'guideline_parse', 'nccn_rectal_cape_sum.rds')
 )
 
 dft_gen_mark <- readr::read_rds(
@@ -404,6 +410,7 @@ Above we presented three <span style="color:#E63746;">broad categories</span> fo
 
 ```{r}
 #| include: true
+#| fig-height: 6
 js_olu_cat_explain_tree
 ```
 
@@ -985,7 +992,7 @@ dft_panc_cases %>%
 
 
 ```{r}
-dft_nccn_sum %<>% 
+dft_nccn_sum_panc %<>% 
   mutate(
     char_norm_match = n_text_matches / alpha_char_count,
     word_norm_match = n_text_matches / word_count
@@ -993,37 +1000,11 @@ dft_nccn_sum %<>%
 
 pal_cape_guide <- c('#c23917', '#177bc2', '#22856e')
 
-gg_nccn_cape <- ggplot(
-  dft_nccn_sum,
-  aes(x = date, y = char_norm_match)
-) + 
-  geom_point() + 
-  labs(
-    x = "Guideline date",
-    y = "Number of text matches",
-    title = "String matches from PDF pancreas NCCN guidelines",
-    subtitle = "Strings matching 'Cape*', except 'Capello'"
-  ) + 
-  scale_x_date(
-    expand = expansion(mult = c(0.05, 0.1))
-  ) + 
-  geom_smooth(
-    se = F, 
-    color = "#7f7f7f55", 
-    method = 'loess',
-    span = 1,
-    linewidth = 2
-  ) + 
-  scale_y_continuous(
-    breaks = 0:10 * 10^(-4),
-    labels = 0:10,
-    name = "Matches per 10,000 characters",
-    limits = c(-0.01 * 10^-4, NA)
-  ) + 
-  theme_light() + 
-  theme(
-    plot.title.position = "plot"
-  ) + 
+gg_nccn_panc_cape <- plot_guideline_str(
+  dat = dft_nccn_sum_panc,
+  y_var = 'char_norm_match',
+  plot_title = "String matches from PDF pancreas NCCN guidelines",
+)  +
   geom_vline( 
     xintercept = ymd('2005-01-01'), 
     color = pal_cape_guide[1]
@@ -1051,20 +1032,24 @@ gg_nccn_cape <- ggplot(
     x = ymd('2022-07-01'), y = 0.9 * 10^(-4), hjust = 1,
     label = "FDA approved"
   )
-    
 
-ggsave(
-  gg_nccn_cape,
-  height = 4, width = 8,
-  filename = here('output', 'img', '01_panc_cape_nccn_text_parse.pdf')
-)
+
+# ggsave(
+#   gg_nccn_cape,
+#   height = 4, width = 8,
+#   filename = here('output', 'img', '01_panc_cape_nccn_text_parse.pdf')
+# )
+
+
 
 
 ```
 
-### R4.5 Guidelines + Capecitabine
+### *R4.5 Guidelines + Capecitabine
 
 *Credit:* Thanks to Jennifer Hoppe for compiling and organizing all the NCCN guidelines.  This took care of the majority of work needed to get here, greatly appreciated.
+
+#### Pancreas
 
 We discussed above the possibility that the NCCN guidelines could precede approvals and have an impact on the way people treat.  The following graph shows the number of mentions of "cape", which tend to be things like "Capecitabine" and "CapeOx".  I excluded "Capello", which is an author's name appearing in the references later on.  This is normalized by the number of alphabetic (not alphanumeric) characters in the guideline, to adjust somewhat for the massive expansion in their size over time.
 
@@ -1072,7 +1057,7 @@ We discussed above the possibility that the NCCN guidelines could precede approv
 ```{r}
 #| include: true 
 #| fig.height: 3
-gg_nccn_cape
+gg_nccn_panc_cape
 ```
 
 
@@ -1086,6 +1071,136 @@ gg_nccn_cape
 - Some of the very old guidelines didn't parse (need OCR).  Because the first two years that *did* parse show no mentions I'm not going to bother messing with those.
 - I also counted words and normalized that way.  The graphs have an extremely shape with alphabetic characters and words.
 - We did not exclude references.  To me it seems fine if we "double count" both characters and capecitabine mentions, since our goal is just showing when the guidelines started talking about capecitabine.
+
+
+
+
+
+
+```{r}
+dft_nccn_sum_colon  %<>% 
+  mutate(
+    char_norm_match = n_text_matches / alpha_char_count,
+    char_norm_capeox = n_matches_capeox / alpha_char_count,
+    word_norm_match = n_text_matches / word_count
+  )
+
+gg_nccn_colon_cape <- plot_guideline_str(
+  dat = dft_nccn_sum_colon,
+  y_var = 'char_norm_match',
+  plot_title = "String matches from NCCN PDF colon guidelines",
+) +
+  geom_vline( 
+    xintercept = ymd('2005-06-15'), 
+    color = pal_cape_guide[2]
+  ) +  
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[2],
+    x = ymd('2005-06-15'), y = 0.9 * 10^(-4), hjust = 1,
+    label = "FDA approved"
+  )
+
+
+gg_nccn_colon_capeox <- plot_guideline_str(
+  dat = dft_nccn_sum_colon,
+  y_var = 'char_norm_capeox',
+  plot_title = "String matches from NCCN PDF colon guidelines",
+  plot_subtitle = "CapeOx strings only"
+) +
+  geom_vline( 
+    xintercept = ymd('2022-12-14'), 
+    color = pal_cape_guide[2]
+  ) +  
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[2],
+    x = ymd('2022-12-14'), y = 0.9 * 10^(-4), hjust = 1,
+    label = "FDA approved"
+  )
+
+```
+
+#### Colon
+
+Colon and rectal are separate in the NCCN guidelines, so we'll look at both.  There was also a request to look at CapeOx strings separately due to the later approval of that therapy.
+
+```{r}
+#| include: true
+#| fig-height: 3
+gg_nccn_colon_cape
+gg_nccn_colon_capeox
+```
+
+**Notes**
+
+- There is a broad approval for metastatic **colorectal** cancer in 2001, with no conmed requirements.  I marked the first colon cancer approval here, but that may be wrong.
+
+
+
+
+
+
+
+```{r}
+dft_nccn_sum_rectal  %<>% 
+  mutate(
+    char_norm_match = n_text_matches / alpha_char_count,
+    char_norm_capeox = n_matches_capeox / alpha_char_count,
+    word_norm_match = n_text_matches / word_count
+  )
+
+gg_nccn_rectal_cape <- plot_guideline_str(
+  dat = dft_nccn_sum_rectal,
+  y_var = 'char_norm_match',
+  plot_title = "String matches from NCCN PDF rectal guidelines",
+) +
+  geom_vline( 
+    xintercept = ymd('2005-06-15'), 
+    color = pal_cape_guide[2]
+  ) +  
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[2],
+    x = ymd('2005-06-15'), y = 0.9 * 10^(-4), hjust = 1,
+    label = "FDA approved"
+  )
+
+
+gg_nccn_rectal_capeox <- plot_guideline_str(
+  dat = dft_nccn_sum_rectal,
+  y_var = 'char_norm_capeox',
+  plot_title = "String matches from NCCN PDF rectal guidelines",
+  plot_subtitle = "CapeOx strings only"
+) +
+  geom_vline( 
+    xintercept = ymd('2022-12-14'), 
+    color = pal_cape_guide[2]
+  ) +  
+  annotate(
+    geom = "text", size = 4, color = pal_cape_guide[2],
+    x = ymd('2022-12-14'), y = 0.9 * 10^(-4), hjust = 1,
+    label = "FDA approved"
+  )
+
+```
+
+#### Rectal
+
+Same as above for NCCN rectal guidelines
+
+```{r}
+#| include: true
+#| fig-height: 3
+gg_nccn_rectal_cape
+gg_nccn_rectal_capeox
+```
+
+**Notes**
+
+- There is a broad approval for metastatic **colorectal** cancer in 2001, with no conmed requirements.  I marked the first rectal cancer approval here, but that may be wrong.
+
+
+
+
+
 
 
 
@@ -1413,6 +1528,7 @@ dft_drug_index %<>%
 This shows the drug names that appear in our cohort.  In addition to the exposures (`n_exposure`) we also show the drugs which overlap with the exposures (`n_overlap`), important for conmed checks.  Overlaps can, of course, be older drugs which would not make it through our filters for exposures.
 
 ```{r}
+#| include: true
 dft_drug_index %>%
   dt_wrapper(.)
 ```

@@ -5,7 +5,7 @@ library(pdftools)
 library(pdftables)
 library(stringi)
 
-path_guide <- here('data-raw', 'manual', 'nccn_guideline', 'pancreatic')
+path_guide <- here('data-raw', 'manual', 'nccn_guideline', 'rectal')
 
 dft_nccn <- tibble(
   file = dir_ls(path_guide)
@@ -22,9 +22,7 @@ dft_nccn %<>%
   mutate(date = lubridate::mdy(date)) %>%
   arrange(date)
 
-# mmmk, some of the early ones didn't work.  We could try to OCR these, but it 
-# doesn't seem worth it since the first ones which DID scan show nothing.
-
+# Year cutoff when these failed seems roughly the same as panc
 dft_nccn %<>%
   filter(
     date > ymd("2001-01-01")
@@ -86,20 +84,26 @@ dft_nccn %<>%
     n_text_matches = purrr::map_dbl(
       .x = string_matches,
       .f = length
+    ),
+    n_matches_capeox = purrr::map_dbl(
+      .x = string_matches,
+      .f = \(z) length(z[str_detect(tolower(z), "capeox")])
     )
   )
-
+    
 
 
 
 dft_nccn_sum <- select(
   dft_nccn,
   date, file, active_year, 
-  alpha_char_count, word_count, string_matches, n_text_matches
+  alpha_char_count, word_count, string_matches, 
+  n_text_matches,
+  n_matches_capeox
 )
 
 readr::write_rds(
   dft_nccn_sum,
-  here('data', 'guideline_parse', 'nccn_panc_capecitabine_sum.rds')
+  here('data', 'guideline_parse', 'nccn_rectal_cape_sum.rds')
 )
 

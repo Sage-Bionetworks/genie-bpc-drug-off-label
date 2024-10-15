@@ -12,7 +12,11 @@ dft_datasets_to_get <- tribble(
   "cancer_level_dataset_non_index.csv", "ca_non_ind",
   "cancer_panel_test_level_dataset.csv", "cpt",
   "patient_level_dataset.csv", "pt",
-  "regimen_cancer_level_dataset.csv", "reg"   
+  "regimen_cancer_level_dataset.csv", "reg",
+  "imaging_level_dataset.csv", "img'",
+  "med_onc_note_level_dataset.csv", "med_onc",
+  "pathology_report_level_dataset.csv", "path",
+  "tm_level_dataset.csv", "tm"
 )
 
 dft_folders <- tibble::tribble(
@@ -35,6 +39,8 @@ dc_help <- function(cohort_name) {
 # Sets up
 purrr::walk(.x = dft_folders$cohort, .f = dc_help)
 
+
+# get_syn_children_df(dft_folders$synid[1])
 
 dft_datasets <- dft_folders %>%
   mutate(

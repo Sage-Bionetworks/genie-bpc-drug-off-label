@@ -77,6 +77,9 @@ dft_path_breast %<>%
 # now for each person, we need a value showing their first tested time and
 #   positive time for each biomarker.
 
+readr::write_rds(
+  here('data', 'cohort', 'biomarker_flags'
+
 dft_path_breast %<>%
   group_by(cohort, record_id, test) %>%
   summarize(
@@ -91,13 +94,13 @@ dft_path_breast %<>%
     case_when(is.infinite(z) ~ NA_real_, T ~ z)
   }))
   
-
-ggplot(
-  dft_path_breast,
-  aes(x = dob_biom_tested, y = dob_biom_pos - dob_biom_tested)
-) + 
-  geom_point() + 
-  geom_hline(yintercept = 0)
+# Looking for:  Nothing above horizontal line.
+# ggplot(
+#   dft_path_breast,
+#   aes(x = dob_biom_tested, y = dob_biom_pos - dob_biom_tested)
+# ) + 
+#   geom_point() + 
+#   geom_hline(yintercept = 0)
 
 dft_path_breast %>% glimpse
            

@@ -21,7 +21,7 @@ dft_step_explain %<>%
   mutate(
     check_type = case_when(
       step %in% "test_met" ~ "Time-specific patient status",
-      str_detect(step, "_bio_") ~ "Biomarker requirements",
+      str_detect(step, "_biom_") ~ "Biomarker requirements",
       str_detect(step, "_with_") ~ "ConMed requirements",
       step %in% "test_ind_exists" ~ "Matching indication exists",
       step %in% "test_date_definite" ~ "Exposure after approval"

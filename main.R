@@ -18,9 +18,6 @@ source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'derive_breast_biomarker_regimen_flags.R'))
 source(here('analysis', 'script', 'join_regimen_biomarker_flags.R'))
 
-source(here('analysis', 'script', 'derive_clinical_biomarker_negatives.R'))
-source(here('analysis', 'script', 'combine_biomarker_flags.R'))
-
 source(here('analysis', 'script', 'declare_with_tests.R'))
 source(here('analysis', 'script', 'link_drugs_indications.R'))
 source(here('analysis', 'script', 'stepwise_test_analysis.R'))

@@ -19,7 +19,8 @@ dft_clin_dat <- tibble(
   mutate(cohort_path = here("data-raw", cohort)) %>%
   filter(cohort %in% c("BLADDER", 'BrCa', 'CRC', 'NSCLC', 'PANC', 'Prostate'))
 
-
+# A bit inefficient here - we load all the data, then trim down to the ones 
+#  we want to keep. 
 dft_clin_dat %<>%
   mutate(
     loaded_data = purrr::map(
@@ -30,6 +31,10 @@ dft_clin_dat %<>%
     )
   ) %>%
   unnest(loaded_data)
+
+folder_load_helper(dft_clin_dat$cohort_path[1], dn = dft_data_names)
+
+# dft_clin_dat %<>% filter(!is.na(short_name), dn = dft_data_names)
 
 # change the cohort name from "NSCLC2" to "NSCLC".  We have the "phase" column
 # if we ever want to recover that info, not sure why they did this.

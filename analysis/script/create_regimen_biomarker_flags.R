@@ -58,8 +58,22 @@ dft_skel %<>%
     )
   )
 
-dft_skel %>% count(biom_er)      
-dft_skel %>% count(biom_pr)      
-dft_skel %>% count(biom_her2)      
-dft_skel %>% count(biom_hr)      
+chk_biom <- dft_skel %>%
+  select(matches("^biom")) %>%
+  as.matrix %>%
+  is.infinite %>%
+  any %>%
+  `!`
+if (!chk_biom) {
+  cli_abort("Error in processing biomarker flags - look for infinite values in biom_* columns.")
+}
+
+dft_biom_flags <- dft_skel %>%
+  select(cohort, record_id, ca_seq, regimen_number, drug_number,
+         matches("^biom_"))
+
+readr::write_rds(
+  dft_biom_flags,
+  "biomarker_flags_by_drug.rds"
+)
 

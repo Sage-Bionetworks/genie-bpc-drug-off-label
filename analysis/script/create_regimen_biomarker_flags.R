@@ -68,12 +68,20 @@ if (!chk_biom) {
   cli_abort("Error in processing biomarker flags - look for infinite values in biom_* columns.")
 }
 
+dft_skel %<>%
+  mutate(
+    across(
+      matches("^biom_"),
+      .fns = as.logical
+    )
+  )
+
 dft_biom_flags <- dft_skel %>%
   select(cohort, record_id, ca_seq, regimen_number, drug_number,
          matches("^biom_"))
 
 readr::write_rds(
   dft_biom_flags,
-  "biomarker_flags_by_drug.rds"
+  here('data', 'cohort', 'biomarker_flags', "biomarker_flags_by_drug.rds")
 )
 

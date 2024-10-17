@@ -13,8 +13,7 @@ make_possible_indication_cohort <- function(
       dx_drug_end_or_lastadm_int,
       drug_overlaps,
       num_overlaps,
-      biomark_neg,
-      biomark_neg_vec # not required, but easier for me
+      matches("^biom_")
     )
   
   dat_ind %<>%

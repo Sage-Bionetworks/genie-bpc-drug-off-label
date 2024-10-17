@@ -14,7 +14,7 @@ summarize_possible_approvals_2 <- function(
   
   dat_poss_app <- dat_poss_app %>%
     group_by(across(all_of(group_cols))) %>%
-    arrange(across(.cols = test_cols_except_all, .fns = list(desc))) %>%
+    arrange(across(.cols = all_of(test_cols_except_all), .fns = list(desc))) %>%
     mutate(fail_count = length(test_cols_except_all) - rowSums(pick(all_of(test_cols_except_all)))) 
   
   rtn <- dat_poss_app %>% 

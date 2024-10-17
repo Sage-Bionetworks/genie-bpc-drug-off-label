@@ -1607,10 +1607,10 @@ vec_covered_bio_simple <- c() # when we have a biomarker declare script this wil
 # These have to be manually updated:
 vec_covered_bio_complex <- c(
   "HER2+",
-  "HR+ and HER2-",
-  "HR+",
-  "ER+",
-  "TNBC"
+  #"HR+ and HER2-",
+  "HR+"
+  #"ER+",
+  #"TNBC"
 )
 
 vec_covered_bio <- c(vec_covered_bio_simple, vec_covered_bio_complex)

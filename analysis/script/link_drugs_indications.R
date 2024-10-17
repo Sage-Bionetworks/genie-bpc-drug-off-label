@@ -21,13 +21,15 @@ dft_hdrug_cohort_lim <- readr::read_rds(
 )
 
 # Add the biomarker lists into the cohort data:
-dft_bio <- readr::read_rds(
-  here('data', 'cohort', 'biomarker_flags', 'negative_flags_list.rds')
+dft_biom_flags <- readr::read_rds(
+  here('data', 'cohort', 'biomarker_flags',
+       'biomarker_flags_by_drug.rds')
 )
+
 dft_hdrug_cohort_lim <- left_join(
   dft_hdrug_cohort_lim,
-  dft_bio,
-  by = c('cohort', 'record_id')
+  dft_biom_flags,
+  by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number')
 )
 
 
@@ -58,20 +60,32 @@ dft_poss_app <- dft_poss_app %>%
 # Obviously these biomarker tests can be parsed out in the future.
 
 dft_poss_app %<>%
-  add_check_biomarker_simple("HER2+")
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "HR+",
+    biom_col = "biom_hr"
+  )
 
 dft_poss_app %<>%
-  add_check_biomarker_simple("HR+")
-
-# We don't have a HER2- flag yet so this does nothing:
-dft_poss_app %<>%
-  add_check_biomarker_simple("HR+ and HER2-", c("HR+", "HER2-"))
-
-dft_poss_app %<>%
-  add_check_biomarker_simple("ER+")
-
-dft_poss_app %<>%
-  add_check_biomarker_simple("TNBC")
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "HER2+",
+    biom_col = "biom_her2"
+  )
+    
+# dft_poss_app %<>%
+#   add_check_biomarker_simple("HER2+")
+# 
+# dft_poss_app %<>%
+#   add_check_biomarker_simple("HR+")
+# 
+# # We don't have a HER2- flag yet so this does nothing:
+# dft_poss_app %<>%
+#   add_check_biomarker_simple("HR+ and HER2-", c("HR+", "HER2-"))
+# 
+# dft_poss_app %<>%
+#   add_check_biomarker_simple("ER+")
+# 
+# dft_poss_app %<>%
+#   add_check_biomarker_simple("TNBC")
 
 
 dft_simple_with_tests <- readr::read_rds(
@@ -111,7 +125,7 @@ dft_poss_app %<>% add_check_carbotaxol_nab(.)
 dft_poss_app %<>% add_check_pem_plat(.)
 dft_poss_app %<>% add_check_tras_chemo(.)
 dft_poss_app %<>% add_check_ai(.)
-dft_poss_app %<>% add_check_ai_tamox(.)
+dft_poss_app %<>% add_check_ai_or_tamox(.)
 dft_poss_app %<>% add_check_pd_nivo(.)
 dft_poss_app %<>% add_check_fluor_iri_or_oxal(.)
 

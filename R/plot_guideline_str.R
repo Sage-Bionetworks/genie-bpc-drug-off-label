@@ -7,8 +7,6 @@ plot_guideline_str <- function(
     plot_subtitle = "Strings matching 'Cape*', except 'Capello'"
 ) {
   
-  
-  
   gg <- ggplot(
     dat,
     aes(x = date, y = .data[[y_var]])

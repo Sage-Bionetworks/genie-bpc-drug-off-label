@@ -42,7 +42,7 @@ dft_ca_non_ind_nsclc %>%
     as_tibble(dft_cpt_nsclc),
     by = c('record_id', 'ca_seq')
   ) %>%
-  as_tibble
+  as_tibble %>% glimpse
 
 
 

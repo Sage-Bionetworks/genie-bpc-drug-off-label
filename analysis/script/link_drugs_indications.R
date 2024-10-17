@@ -70,6 +70,12 @@ dft_poss_app %<>%
     ind_sheet_bio_req = "HER2+",
     biom_col = "biom_her2"
   )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "HER2+",
+    biom_col = "biom_her2"
+  )
     
 # dft_poss_app %<>%
 #   add_check_biomarker_simple("HER2+")

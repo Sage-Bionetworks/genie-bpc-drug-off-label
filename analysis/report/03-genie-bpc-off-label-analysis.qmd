@@ -244,7 +244,7 @@ vec_bpc_drugs_not_mapped <- vec_bpc_drugs[!(vec_bpc_drugs %in% vec_ind_drugs)] %
 - Of the `r nrow(dft_hdrug_det)` exposures (one person using a drug for one block of time), `r round(prop_uses_covered*100, 3)`% involve a drug which was successfully mapped to a drug in the indications sheet.
 
 
-### *R3.1 Definitions
+### R3.1 Definitions
 
 We define an **exposure** to be one person using a drug for one block of time.  This is reliant on curation in BPC, so a block of time is pinned to how regimens are curated, but the point to keep in mind is that person X can have multiple exposures to drug Y.
 
@@ -1316,7 +1316,7 @@ failure_test_helper("NSCLC", "Bevacizumab", "test_with_carbotaxol")
 ```
 
 
-### *R4.7 Conmed-based failures
+### R4.7 Conmed-based failures
 
 In this section we dig into the exposures which failed when adding a test for conmeds, going case by case for those with a large count for {cohort, agent, test_with_*} (see R3.6).  I have arbitrarily included those combinations with at least 10 cases to start.
 
@@ -1499,6 +1499,157 @@ get_overlaps_by_step(
 
 
 
+### *R4.8 Biomarker-based OLU
+
+
+```{r}
+dft_biom_her2_fails <- dft_stepwise_new_olu %>% 
+  filter(step %in% "test_biom_her2") %>%
+  pull(new_off_label) %>%
+  `[[`(.,1) 
+
+n_her2_exposure_fails <- dft_biom_her2_fails %>% nrow(.)
+
+dft_biom_her2_fails %<>%
+  select(cohort, record_id, ca_seq) %>%
+  distinct(.)
+
+n_her2_people_fails <- dft_biom_her2_fails %>% nrow(.)
+
+dft_ca_ind_breast <- dft_all_cases %>% 
+  filter(cohort %in% "Breast") %>%
+  pull(ca_ind) %>%
+  `[[`(.,1) %>%
+  fix_cohort_names(.)
+
+dft_biom_her2_fails %<>%
+  select(cohort, record_id, ca_seq) %>%
+  left_join(
+    .,
+    select(dft_ca_ind_breast,
+           cohort, record_id, ca_seq, ca_bca_her_summ, bca_subtype),
+    by = c("cohort", "record_id", "ca_seq")
+  )
+
+```
+
+#### HER2, Trastuzumab & Pertuzumab
+
+There were `r n_her2_exposure_fails` exposures in `r n_her2_people_fails` people which required HER2+, but we didn't find evidence of that in IHC/ISH values reported in pathology.  This is in Trastuzumab and Pertuzumab mostly.  In cases where no HER2 testing was done we declined to flag patients, only people with at least one normal test result were flagged.
+
+The easiest way we can check the result is looking at the patient-level summary for HER2, and for the breast cancer subtype.  We would expect to see a substantial number of people who were binned into the HER2- categories if I'm right, even though I'm not sure of the exact algorithm used to collapse pathology results into a time-invariant patient summary.
+
+The following table shows counts of the number of people in each level of `ca_bca_her_summ` and `bca_subtype`, among those who had at least one off label trastuzumab use failed when we added the HER2+ biomarker check:
+
+```{r}
+#| include: true
+dft_biom_her2_fails %>%
+  select(ca_bca_her_summ, bca_subtype) %>%
+  gtsummary::tbl_summary(.)
+```
+
+**Notes:**
+
+- About a 50/50 split between people who are HER2+ and HER2-.  May need to plot out the path reports for these folks.
+- 2 borderline results, which is about 8% of people.  The cohort overall is 1% borderline for this summary.  Not to make a mountain out of a duo.
+
+```{r}
+dft_biom_breast_tests <- readr::read_rds(
+  here('data', 'cohort', 'biomarker_flags', 'biom_breast_1row_per_test.rds')
+)
+
+dft_biom_breast_tests %>%
+  filter(record_id %in% dft_biom_her2_fails$record_id) %>%
+  filter(str_detect(test, "her2")) %>%
+  group_by(record_id) %>%
+  summarize(any_pos = any(biom_pos, na.rm = T), .groups = 'drop') %>%
+  left_join(., 
+            select(dft_biom_her2_fails, record_id, ca_bca_her_summ),
+            by = c('record_id')
+  ) %>%
+  filter(!any_pos, ca_bca_her_summ %in% "Positive/elevated/amplified")
+  # tabyl(any_pos, ca_bca_her_summ)
+
+vec_olu_biom_her2 <- filter(
+    dft_biom_her2_fails, ca_bca_her_summ %in% "Positive/elevated/amplified"
+  )$record_id
+
+dft_biom_her2_traj_tests <- dft_biom_breast_tests %>%
+  filter(str_detect(test, "her2")) %>%
+  filter(record_id %in% vec_olu_biom_her2) %>%
+  select(record_id, event = test, dob_to_event = dob_path_proc_days, contains("biom"))
+
+dft_biom_her2_traj_drugs <- dft_stepwise_new_olu %>% 
+  filter(step %in% "test_biom_her2") %>%
+  pull(new_off_label) %>%
+  `[[`(.,1) %>%
+  filter(record_id %in% vec_olu_biom_her2) %>%
+  left_join(
+    ., 
+    select(dft_hdrug_cohort, cohort, record_id, ca_seq, regimen_number, drug_number,
+           agent, drugs_startdt_int),
+    by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 'drug_number',
+           'agent')
+  ) %>%
+  select(record_id, event = agent, dob_to_event = drugs_startdt_int)
+
+dft_biom_her2_traj <- bind_rows(
+  dft_biom_her2_traj_tests,
+  dft_biom_her2_traj_drugs
+) %>%
+  arrange(record_id, dob_to_event)
+
+
+
+```
+
+The following table shows both path reports and drug uses in sequence.  This only includes people who were listed as HER2+ in summary variables, but we marked as off label for not being HER2+ at the time of drug use requiring it.  I'm looking to see if the code worked by going case by case in those identified.
+
+```{r}
+#| include: true
+dft_biom_her2_traj %>%
+  dt_wrapper(.)
+```
+
+*Notes*
+
+- I don't see anything that looks like an error.
+- Four of these people, who are all HER2+ based on the summary variables, have no path data to back that up at any time.
+- The others seem to have taken trasztuzumab long before any HER2 interpretation pops up in the data.  Seems like missing path reports are a possibility.
+
+
+```{r}
+
+dft_her2_ngs <- dft_biom_her2_fails %>%
+  select(record_id) %>%
+  left_join(., select(dft_gen_mark, record_id, any_ERBB2), by = 'record_id') %>%
+  left_join(
+    .,
+    select(dft_ca_ind_breast, record_id, ca_bca_her_summ),
+    by = 'record_id'
+  ) %>%
+  replace_na(list(any_ERBB2 = F)) 
+```
+
+
+One more possibility:  Are there ERBB2 mutations/amplifications in these people?  Here I'm looking at the people who used a HER2+ requiring drug, but didn't have a positive IHC/ISH before they took it:
+
+```{r}
+#| include: true
+dft_her2_ngs %>%
+  select(-record_id) %>%
+  mutate(any_ERBB2 = if_else(any_ERBB2, "ERBB2 alt.", "ERBB2 wild")) %>%
+  gtsummary::tbl_summary(by = "any_ERBB2")
+```
+
+**Notes:**
+
+- Lots of ERBB2 mutations/alterations in this group, about half.  Indicates (to me) that people may have been using NGS as evidence for administering trastuzumab.
+- Based on 9/10 of the positive cases having altered ERBB2, we could infer that BPC curators also took this as evidence of people being HER2+ (recall that at least 4 of these people have no path data indicating positivity).
+- GENIE attempts to remove germline data, ERBB2 is often germline mutated, so that's a major caveat here.
+
+
+
 
 
 ## Appendices
@@ -1602,15 +1753,16 @@ dfp_unchecked_with %>%
 
 
 ```{r}
-vec_covered_bio_simple <- c() # when we have a biomarker declare script this will be useful.
+vec_covered_bio_simple <- c() # leaving in case we get a biomarker declare script.
 
 # These have to be manually updated:
 vec_covered_bio_complex <- c(
   "HER2+",
-  #"HR+ and HER2-",
-  "HR+"
-  #"ER+",
-  #"TNBC"
+  "HR+ and HER2-",
+  "HR+",
+  "ER+",
+  "TNBC",
+  "ER+|HER2-"
 )
 
 vec_covered_bio <- c(vec_covered_bio_simple, vec_covered_bio_complex)

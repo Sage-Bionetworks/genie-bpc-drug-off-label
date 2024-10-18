@@ -76,6 +76,16 @@ dft_skel %<>%
     )
   )
 
+# Create the combination biomarkers.
+dft_skel %<>%
+  mutate(
+    biom_hr_and_her2_neg = biom_combine_and(biom_hr, !biom_her2),
+    # tnbc = all of er, pr, her2 must be negative.  hr is neg when er and pr
+    #   are both negative, so we can save time with (hr neg) AND (her2 neg).
+    biom_tnbc = biom_combine_and(!biom_hr, !biom_her2),
+    biom_er_or_her2_neg = biom_combine_or(biom_er, !biom_her2)
+  )
+
 dft_biom_flags <- dft_skel %>%
   select(cohort, record_id, ca_seq, regimen_number, drug_number,
          matches("^biom_"))

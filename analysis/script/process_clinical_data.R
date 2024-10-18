@@ -32,10 +32,6 @@ dft_clin_dat %<>%
   ) %>%
   unnest(loaded_data)
 
-folder_load_helper(dft_clin_dat$cohort_path[1], dn = dft_data_names)
-
-# dft_clin_dat %<>% filter(!is.na(short_name), dn = dft_data_names)
-
 # change the cohort name from "NSCLC2" to "NSCLC".  We have the "phase" column
 # if we ever want to recover that info, not sure why they did this.
 dft_clin_dat %<>%
@@ -463,3 +459,4 @@ readr::write_rds(
   x = dft_drug_tracking,
   file = here('data', 'cohort', 'drug_tracking_01.rds')
 )
+

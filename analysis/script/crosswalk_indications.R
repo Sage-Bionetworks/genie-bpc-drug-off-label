@@ -37,6 +37,10 @@ dft_ind %<>%
       with %in% "trastuzumab" ~ "Trastuzumab",
       with %in% "not applicable" ~ NA_character_,
       T ~ with
+    ),
+    biomarker = case_when(
+      biomarker %in% "not applicable" ~ NA_character_,
+      T ~ biomarker
     )
   )
       

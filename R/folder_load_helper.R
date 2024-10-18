@@ -9,9 +9,6 @@ folder_load_helper <- function(fold, dn) {
   dat_names <- dir(fold)
   dat_names <- dat_names[str_detect(dat_names, dn_regex)]
   
-  print(vec_paths)
-  print(dat_names)
-   
   rtn <- tibble(
     path = vec_paths,
     syn_name = dat_names

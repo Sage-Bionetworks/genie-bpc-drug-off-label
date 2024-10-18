@@ -61,21 +61,43 @@ dft_poss_app <- dft_poss_app %>%
 
 dft_poss_app %<>%
   add_check_biomarker_simple(
+    ind_sheet_bio_req = "HER2+",
+    biom_col = "biom_her2"
+  )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
     ind_sheet_bio_req = "HR+",
     biom_col = "biom_hr"
   )
 
 dft_poss_app %<>%
   add_check_biomarker_simple(
-    ind_sheet_bio_req = "HER2+",
-    biom_col = "biom_her2"
+    ind_sheet_bio_req = "HR+ and HER2-",
+    biom_col = "biom_hr_and_her2_neg"
   )
 
 dft_poss_app %<>%
   add_check_biomarker_simple(
-    ind_sheet_bio_req = "HER2+",
-    biom_col = "biom_her2"
+    ind_sheet_bio_req = "ER+|HER2-",
+    biom_col = "biom_er_or_her2_neg"
   )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "TNBC",
+    biom_col = "biom_tnbc"
+  )
+
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "ER+",
+    biom_col = "biom_er"
+  )
+
+
+
+
     
 # dft_poss_app %<>%
 #   add_check_biomarker_simple("HER2+")

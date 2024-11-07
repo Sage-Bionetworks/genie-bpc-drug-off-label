@@ -4,7 +4,7 @@
 library(readxl)
 
 library(cli)
-library(synapser)
+# library(synapser)
 library(purrr)
 library(dplyr)
 library(tidyr)

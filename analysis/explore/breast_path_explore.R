@@ -50,7 +50,7 @@ dft_path_her2_any <- dft_path_her2 %>%
   )
 
 # going to look at first and only cancers first - easier to be sure here.
-dft_her2 <- full_join(
+dft_her2 <- left_join(
   (dft_ca_ind_breast %>% 
      filter(ca_seq %in% 0) %>% 
      select(record_id, ca_bca_her2ihc_val, ca_bca_her2ihc_intp, ca_bca_her_summ, bca_subtype)),
@@ -66,9 +66,20 @@ tabyl(dft_her2, ca_bca_her_summ, her2_pos_ever) # yikes.
 tabyl(dft_her2, ca_bca_her_summ, her2_equiv_no_pos_ever) # also yikes.
 tabyl(dft_her2, ca_bca_her_summ, her2_tested_ever)
  
-    
-  
+dft_her2 %>%
+  filter(ca_bca_her_summ %in% "Positive/elevated/amplified") %>%
+  filter(her2_pos_ever %in% F) %>%
+  pull(record_id) %>%
+  paste0(., '\n') %>%
+  cat
 
+vec_interest <- dft_her2 %>%
+  filter(ca_bca_her_summ %in% "Positive/elevated/amplified") %>%
+  filter(her2_pos_ever %in% F) %>%
+  pull(record_id) 
+
+
+  
 
 
 

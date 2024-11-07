@@ -1,3 +1,5 @@
+
+
 biom_combine_and <- function(
     biom_1,
     biom_2
@@ -24,3 +26,4 @@ biom_combine_or <- function(
 }
 
 # expand_grid(one = c(NA, T, F), two = c(NA, T, F)) %>% mutate(res = biom_combine_or(one, two))
+

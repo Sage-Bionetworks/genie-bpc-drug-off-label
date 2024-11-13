@@ -29,50 +29,28 @@ dft_skel %<>%
 
 dft_skel %<>%
   mutate(
-    biom_er = case_when(
-      is.na(dob_biom_test_er) ~ NA,
-      is.na(dob_biom_pos_er) ~ 0, # tested but never positive
-      (dob_biom_pos_er - 0.5) > dob_drug_start_int ~ 0,
-      (dob_biom_pos_er - 0.5) <= dob_drug_start_int ~ 1,
-      T ~ -Inf # should never happen 
+    biom_er = biom_time_to_flag(
+      tt_ref = dob_drug_start_int,
+      tt_test = dob_biom_test_er,
+      tt_pos = dob_biom_pos_er
     ),
-    biom_pr = case_when(
-      is.na(dob_biom_test_pr) ~ NA,
-      is.na(dob_biom_pos_pr) ~ 0, # tested but never positive
-      (dob_biom_pos_pr - 0.5) > dob_drug_start_int ~ 0,
-      (dob_biom_pos_pr - 0.5) <= dob_drug_start_int ~ 1,
-      T ~ -Inf # should never happen 
+    biom_pr = biom_time_to_flag(
+      tt_ref = dob_drug_start_int,
+      tt_test = dob_biom_test_pr,
+      tt_pos = dob_biom_pos_pr
     ),
-    biom_hr = case_when(
-      is.na(dob_biom_test_hr) ~ NA,
-      is.na(dob_biom_pos_hr) ~ 0, # tested but never positive
-      (dob_biom_pos_hr - 0.5) > dob_drug_start_int ~ 0,
-      (dob_biom_pos_hr - 0.5) <= dob_drug_start_int ~ 1,
-      T ~ -Inf # should never happen 
+    biom_hr = biom_time_to_flag(
+      tt_ref = dob_drug_start_int,
+      tt_test = dob_biom_test_hr,
+      tt_pos = dob_biom_pos_hr
     ),
     biom_her2 = biom_time_to_flag(
       tt_ref = dob_drug_start_int,
       tt_test = dob_biom_test_her2,
       tt_pos = dob_biom_pos_her2
-    ),
-    # biom_hr_v2 = biom_time_to_flag(
-    #   tt_ref = dob_drug_start_int,
-    #   tt_test = dob_biom_test_hr,
-    #   tt_pos = dob_biom_test_hr
-    # )
-      
+    )
   )
 
-
-# chk_biom <- dft_skel %>%
-#   select(matches("^biom")) %>%
-#   as.matrix %>%
-#   is.infinite %>%
-#   any %>%
-#   `!`
-# if (!chk_biom) {
-#   cli_abort("Error in processing biomarker flags - look for infinite values in biom_* columns.")
-# }
 
 dft_skel %<>%
   mutate(

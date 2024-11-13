@@ -38,7 +38,8 @@ cpt_bpc_combined <- readr::read_rds(
 ) %>%
   filter(short_name %in% "cpt") %>%
   pull(dat) %>%
-  bind_rows(.)
+  bind_rows(.) %>%
+  filter(ca_seq %in% 0) # currently doing for cohort
 
 cpt_bpc_combined %<>%
   # fix a few of these with obvious typos...
@@ -85,7 +86,6 @@ readr::write_rds(
 
 record_test <- cpt_bpc_combined %>% 
   select(cohort, record_id, cpt_number, ca_seq, cpt_genie_sample_id, dob_cpt_report_days, cpt_seq_assay_id) %>%
-  filter(ca_seq %in% 0) %>% # currently doing for cohort
   left_join(., gene_test, by = c(cpt_seq_assay_id = 'seq_assay_id'),
             relationship = 'many-to-many')
 

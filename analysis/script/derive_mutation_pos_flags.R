@@ -21,7 +21,8 @@ cpt_bpc_combined <- readr::read_rds(
 ) %>%
   filter(short_name %in% "cpt") %>%
   pull(dat) %>%
-  bind_rows(.)
+  bind_rows(.)%>%
+  filter(ca_seq %in% 0) # doing for cohort, mirror here.
 
 # Only need the samples included in at least one BPC cohort:
 maf %<>%
@@ -32,13 +33,13 @@ maf %<>%
 sample_gene_alt <- maf %>%
   filter(Hugo_Symbol %in% hugo_list) %>% # just for computational ease.
   group_by(sample_id, Hugo_Symbol) %>%
-  summarize(altered = 1, .groups = 'drop') %>%
+  summarize(altered = T, .groups = 'drop') %>%
   pivot_wider(
     names_from = Hugo_Symbol,
     values_from = altered, 
-    values_fill = 0
+    values_fill = F
   )
-# There are some samples missing here. That's OK, we'll get them back merging with custom features (ironically).
+# There are some samples missing here - we will fix after merging with custom.
 
 # In addition to those simple gene features, we will want some specific ones:
 custom_gene_feat <- maf %>%
@@ -79,9 +80,97 @@ gene_feat_all <- full_join(
   by = "sample_id"
 )
 
-# Need to do time-based features according to people.
-# Also consider whether you should only pull in samples associated with first and only cancers.  I think it's probably OK though.
-# Should also look at the biomarker code again to remind myself of my format choices.
+# Fixing the missing samples now:
+gene_feat_all <- cpt_bpc_combined %>%
+  select(sample_id = cpt_genie_sample_id) %>%
+  distinct(.) %>% # can have multiple reports per sample (which I don't need)
+  left_join(., gene_feat_all, by = 'sample_id') %>% 
+  mutate(across(.cols = -sample_id, .fns = \(z) replace_na(z, F)))
+
+# A few checks (not comprehensive at all, just easy things)
+chk_1 <- gene_feat_all %>%
+  filter((EGFR_exon19del | EGFR_pL858R | EGFR_pT790M) & !EGFR)
+if (nrow(chk_1) > 0) {
+  cli_abort("EGFR positive for specific variants but negative overall?  Impossible.")
+}
+chk_2 <- gene_feat_all %>%
+  select(2:last_col()) %>%
+  colSums(.)
+if (any(chk_2 <= 0)) {
+  cli_abort("Some genes of interest are all negative - seems like an error.")
+}
+
+gene_feat_all <- cpt_bpc_combined %>% 
+  select(
+    sample_id = cpt_genie_sample_id,
+    record_id,
+    dob_cpt_report_days
+  ) %>%
+  # we want the first report for each person, we'll conservatively assume
+  #   variants were known to the provider then:
+  group_by(sample_id) %>%
+  arrange(dob_cpt_report_days) %>%
+  slice(1) %>%
+  ungroup(.) %>%
+  left_join(., gene_feat_all, by = 'sample_id')
+
+pos_times <- gene_feat_all %>%
+  pivot_longer(
+    cols = EGFR_exon19del:last_col(),
+    names_to = 'gene',
+    values_to = 'altered'
+  ) %>%
+  filter(altered) %>%
+  group_by(record_id, gene) %>%
+  summarize(
+    dob_biom_pos = min(dob_cpt_report_days),
+    .groups = 'drop'
+  )
+
+pos_times_wide <- pos_times %>%
+  pivot_wider(
+    names_from = 'gene',
+    values_from = 'dob_biom_pos'
+  )
+
+pos_times_wide <- gene_feat_all %>%
+  select(record_id) %>%
+  distinct(.) %>%
+  left_join(., pos_times_wide, by = 'record_id')
+
+# Bit of cleanup.
+pos_times_wide %<>%
+  rename_with(~paste0("dob_biom_pos_", .x), .cols = -record_id) %>%
+  select(order(colnames(.))) %>%
+  select(record_id, everything())
+
+
+# Load in the test times and get this ready to use in a biomarker file.
+test_times <- readr::read_rds(
+  here('data', 'cohort', 'biomarker_flags', 'gene_testing_by_person.rds')
+)
+
+test_times %<>%
+  select(record_id, hugo_symbol, dob_first_tested) %>%
+  pivot_wider(
+    names_from = hugo_symbol,
+    values_from = dob_first_tested
+  ) %>%
+  rename_with(~paste0("dob_biom_test_", .x), .cols = -record_id) 
+
+# should have the same rows in test_times and pos_times_wide now...
+if (nrow(test_times) != nrow(pos_times_wide)) {
+  cli_abort("Row definitions of test and positive don't match.")
+}
+
+biom_gene <- inner_join(test_times, pos_times_wide, by = 'record_id')
+
+readr::write_rds(
+  biom_gene,
+  here('data', 'cohort', 'biomarker_flags', 'biom_gene_1row_per_record.rds')
+)
+
+
            
   
       

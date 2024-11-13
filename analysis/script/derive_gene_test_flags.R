@@ -84,7 +84,7 @@ readr::write_rds(
 
 
 record_test <- cpt_bpc_combined %>% 
-  select(cohort, record_id, cpt_number, ca_seq, cpt_genie_sample_id, dx_cpt_rep_days, cpt_seq_assay_id) %>%
+  select(cohort, record_id, cpt_number, ca_seq, cpt_genie_sample_id, dob_cpt_report_days, cpt_seq_assay_id) %>%
   filter(ca_seq %in% 0) %>% # currently doing for cohort
   left_join(., gene_test, by = c(cpt_seq_assay_id = 'seq_assay_id'),
             relationship = 'many-to-many')
@@ -106,10 +106,10 @@ record_test <- record_test %>%
 record_test_pos <- record_test %>%
   group_by(cohort, record_id, hugo_symbol) %>%
   filter(tested) %>%
-  arrange(dx_cpt_rep_days) %>% 
+  arrange(dob_cpt_report_days) %>% 
   summarize(
     ever_tested = any(tested),
-    dx_first_tested = first(dx_cpt_rep_days),
+    dob_first_tested = first(dob_cpt_report_days),
     sample_first_tested = first(cpt_genie_sample_id),
     .groups = 'drop'
   )
@@ -120,7 +120,11 @@ record_test %<>%
   left_join(., record_test_pos, by = c('cohort', 'record_id', 'hugo_symbol'))
 
 if (
-  (record_test %>% count(cohort, record_id, hugo_symbol) %>% pull(n) %>% max) > 1) {
+  (record_test %>% 
+   count(cohort, record_id, hugo_symbol) %>% 
+   pull(n) %>% 
+   max) > 1
+) {
   cli_abort("Non-unique gene testing results for subjects - needs to be fixed.")
 }
 

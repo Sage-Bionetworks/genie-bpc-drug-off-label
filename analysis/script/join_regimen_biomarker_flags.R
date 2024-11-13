@@ -129,6 +129,11 @@ dft_skel %<>%
     biom_er_or_her2_neg = biom_combine_or(biom_er, !biom_her2),
     biom_EGFR_ex19_or_pL858R = biom_combine_or(biom_EGFR_exon19del,
                                                biom_EGFR_pL858R)
+  ) %>%
+  # preference:  I like the breast cancer markers to be grouped.
+  relocate(
+    biom_hr_and_her2_neg, biom_tnbc, biom_er_or_her2_neg,
+    .after = biom_her2
   )
 
 dft_biom_flags <- dft_skel %>%

@@ -56,9 +56,7 @@ dft_poss_app <- make_possible_indication_cohort(
 dft_poss_app <- dft_poss_app %>%
   add_check_met(.) 
 
-
-# Obviously these biomarker tests can be parsed out in the future.
-
+# Obviously these biomarker tests can be oranized into a dataframe later if needed.
 dft_poss_app %<>%
   add_check_biomarker_simple(
     ind_sheet_bio_req = "HER2+",
@@ -95,7 +93,19 @@ dft_poss_app %<>%
     biom_col = "biom_er"
   )
 
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "No EGFR mutations AND No ALK mutations",
+    biom_col = "biom_no_ALK_or_EGFR",
+    test_name = 'test_biom_no_egfr_or_alk'
+  )
 
+dft_poss_app %<>%
+  add_check_biomarker_simple(
+    ind_sheet_bio_req = "EGFR exon 19 deletion|EGFR p.L858R",
+    biom_col = "biom_EGFR_ex19_or_pL858R"
+  )
+    
 
 
     

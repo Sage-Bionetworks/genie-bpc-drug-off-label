@@ -40,6 +40,8 @@ dft_ind %<>%
     ),
     biomarker = case_when(
       biomarker %in% "not applicable" ~ NA_character_,
+      biomarker %in% "no EGFR or ALK genomic tumor aberrations" ~ 
+        "No EGFR mutations AND No ALK mutations",
       T ~ biomarker
     )
   )

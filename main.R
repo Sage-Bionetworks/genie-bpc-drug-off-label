@@ -28,6 +28,8 @@ source(here('analysis', 'script', 'scrape_guidelines_panc_cape.R'))
 source(here('analysis', 'script', 'scrape_guidelines_colon_cape.R'))
 source(here('analysis', 'script', 'scrape_guidelines_rectal_cape.R'))
 
+source(here('analysis', 'script', 'biomarker_driven_use.R'))
+
 # no longer an rmarkdown doc:
 # rmarkdown::render(
 #   input = here('analysis', 'report', '01-genie-bpc-off-label.Rmd'),

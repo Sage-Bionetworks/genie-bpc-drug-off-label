@@ -95,11 +95,16 @@ purrr::pwalk(
 synid_maf <- "syn59553458"
 synid_cna <- "syn59553452"
 synid_clin_samp <- "syn59553454"
+# note: the bed file is newer than the maf version.
+# Just trying this to see if we can resolve some seq assay id issues.
+synid_bed <- 'syn63702475'
+
 fs::dir_create('data-raw', 'main_genie')
 
 get_and_save_dataset(synid_maf, 'main_genie')
 get_and_save_dataset(synid_cna, 'main_genie')
 get_and_save_dataset(synid_clin_samp, 'main_genie')
+get_and_save_dataset(synid_bed, 'main_genie')
 
 
 

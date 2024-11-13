@@ -14,7 +14,8 @@ source(here('analysis', 'script', 'process_genomic_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
 source(here('analysis', 'script', 'derive_first_approvals.R'))
 
-
+source(here('analysis', 'script', 'derive_gene_test_flags.R'))
+source(here('analysis', 'script', 'derive_mutation_pos_flags.R'))
 source(here('analysis', 'script', 'derive_breast_biomarker_regimen_flags.R'))
 source(here('analysis', 'script', 'join_regimen_biomarker_flags.R'))
 

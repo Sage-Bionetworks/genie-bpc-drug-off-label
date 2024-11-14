@@ -21,7 +21,7 @@ source(here('analysis', 'script', 'join_regimen_biomarker_flags.R'))
 
 source(here('analysis', 'script', 'declare_with_tests.R'))
 source(here('analysis', 'script', 'declare_biom_tests.R'))
-source(here('analysis', 'script', 'link_drugs_indications.R'))
+source(here('analysis', 'script', 'join_and_test_exposures.R'))
 source(here('analysis', 'script', 'stepwise_test_analysis.R'))
 source(here('analysis', 'script', 'stepwise_tree_explanation.R'))
 

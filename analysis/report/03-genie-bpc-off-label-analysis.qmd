@@ -1554,7 +1554,7 @@ dft_biom_her2_fails %<>%
 
 #### HER2, Trastuzumab & Pertuzumab
 
-There were `r n_her2_exposure_fails` exposures in `r n_her2_people_fails` people which required HER2+, but we didn't find evidence of that in IHC/ISH values reported in pathology.  This is in Trastuzumab and Pertuzumab mostly.  In cases where no HER2 testing was done we declined to flag patients, only people with at least one normal test result were flagged.
+There were `r n_her2_exposure_fails` exposures in `r n_her2_people_fails` people which required HER2+, but we didn't find evidence of that in IHC/ISH values reported in pathology.  This is in Trastuzumab and Pertuzumab mostly.  We did not flag people with no recorded tests before the drug use, because they could have been tested at another institution.  This only includes people who had at least one test, and all their tests were negative/normal.  
 
 The easiest way we can check the result is looking at the patient-level summary for HER2, and for the breast cancer subtype.  We would expect to see a substantial number of people who were binned into the HER2- categories if I'm right, even though I'm not sure of the exact algorithm used to collapse pathology results into a time-invariant patient summary.
 
@@ -1569,8 +1569,7 @@ dft_biom_her2_fails %>%
 
 **Notes:**
 
-- About a 50/50 split between people who are HER2+ and HER2-.  May need to plot out the path reports for these folks.
-- 2 borderline results, which is about 8% of people.  The cohort overall is 1% borderline for this summary.  Not to make a mountain out of a duo.
+- The results went in the opposite direction from what we would expect after removing people with no tests.  Now every single one is registered as HER2+ even though they had only negative tests before they took this drug.
 
 ```{r}
 dft_biom_breast_tests <- readr::read_rds(

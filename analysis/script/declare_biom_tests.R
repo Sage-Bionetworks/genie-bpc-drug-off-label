@@ -44,6 +44,22 @@ simple_biom_tests %<>%
     biom_col = "biom_er"
   ) 
 
+# Lung biomarkers
+simple_biom_tests %<>%
+  add_row(
+    ind_sheet_bio_req = "PD-L1 TPS at least 1%",
+    biom_col = "biom_pdl1_gte_1",
+  ) %>%
+  add_row(
+    ind_sheet_bio_req = "PD-L1 TPS at least 1% AND No EGFR mutations AND No ALK mutations",
+    biom_col = "biom_pdl1_1_no_ALK_or_EGFR",
+  ) %>%
+  add_row(
+    ind_sheet_bio_req = "PD-L1 TPS at least 50% AND No EGFR mutations AND No ALK mutations",
+    biom_col = "biom_pdl1_50_no_ALK_or_EGFR",
+  ) 
+  
+
 # Genomic data biomarkers
 simple_biom_tests %<>%
   add_row(
@@ -55,10 +71,12 @@ simple_biom_tests %<>%
     ind_sheet_bio_req = "EGFR exon 19 deletion|EGFR p.L858R",
     biom_col = "biom_EGFR_ex19_or_pL858R"
   ) %>%
-  add_row(
-    ind_sheet_bio_req = "KRAS",
-    biom_col = "biom_KRAS"
-  ) %>% 
+  # removing this one for now - the label for panitumumab looks like it calls
+  #   for WILD TYPE KRAS, not a mutation.
+  # add_row(
+  #   ind_sheet_bio_req = "KRAS",
+  #   biom_col = "biom_KRAS"
+  # ) %>% 
   add_row(
     ind_sheet_bio_req = "BRAF p.V600E",
     biom_col = "biom_BRAF_pV600E"
@@ -67,6 +85,7 @@ simple_biom_tests %<>%
     ind_sheet_bio_req = "EGFR p.T790M",
     biom_col = "biom_EGFR_pT790M"
   )
+
   
   
   

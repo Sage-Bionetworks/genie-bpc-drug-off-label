@@ -106,6 +106,9 @@ dft_poss_app <- readr::read_rds(
 dft_simple_with_tests <- readr::read_rds(
    here('data', 'linked_approvals', 'simple_with_tests.rds')
 )
+dft_simple_biom_tests <- readr::read_rds(
+   here('data', 'linked_approvals', 'simple_biom_tests.rds')
+)
 
 ```
 
@@ -1769,36 +1772,37 @@ dfp_unchecked_with %>%
 
 
 ```{r}
-vec_covered_bio_simple <- c() # leaving in case we get a biomarker declare script.
+vec_covered_biom_simple <- dft_simple_biom_tests %>% 
+  pull(ind_sheet_bio_req) %>% unique
 
-# These have to be manually updated:
-vec_covered_bio_complex <- c(
-  "HER2+",
-  "HR+ and HER2-",
-  "HR+",
-  "ER+",
-  "TNBC",
-  "ER+|HER2-",
-  "EGFR exon 19 deletion|EGFR p.L858R",
-  "No EGFR mutations AND No ALK mutations",
-  "KRAS",
-  "BRAF p.V600E",
-  "EGFR p.T790M"
-)
+vec_covered_biom_complex <- character(0)
+# vec_covered_bio_complex <- c(
+#   "HER2+",
+#   "HR+ and HER2-",
+#   "HR+",
+#   "ER+",
+#   "TNBC",
+#   "ER+|HER2-",
+#   "EGFR exon 19 deletion|EGFR p.L858R",
+#   "No EGFR mutations AND No ALK mutations",
+#   "KRAS",
+#   "BRAF p.V600E",
+#   "EGFR p.T790M"
+# )
 
-vec_covered_bio <- c(vec_covered_bio_simple, vec_covered_bio_complex)
+vec_covered_biom<- c(vec_covered_biom_simple, vec_covered_biom_complex)
 
-n_checked_bio <- dft_poss_app %>%
-  filter(ind_biomarker %in% vec_covered_bio) %>%
+n_checked_biom <- dft_poss_app %>%
+  filter(ind_biomarker %in% vec_covered_biom) %>%
   nrow(.)
 
-n_unchecked_bio <- dft_poss_app %>%
-  filter(!(ind_biomarker %in% vec_covered_bio) & !is.na(ind_biomarker)) %>%
+n_unchecked_biom <- dft_poss_app %>%
+  filter(!(ind_biomarker %in% vec_covered_biom) & !is.na(ind_biomarker)) %>%
   nrow(.)
 
-dfp_unchecked_bio <- dft_poss_app %>%
+dfp_unchecked_biom <- dft_poss_app %>%
   filter(!test_all & !is.na(ind_biomarker)) %>%
-  filter(!(ind_biomarker %in% vec_covered_bio)) %>%
+  filter(!(ind_biomarker %in% vec_covered_biom)) %>%
   count(ind_biomarker, sort = T)
 
 ```
@@ -1808,24 +1812,26 @@ dfp_unchecked_bio <- dft_poss_app %>%
 
 There are `r nrow(dft_poss_app)` linked indications for the drug exposures we're studying.  Among those,
 
-- `r n_checked_bio` have a "biomarker" entry we've covered in our checks.  
-- `r n_unchecked_bio` have a "biomarker" entry we haven't covered yet.
+- `r n_checked_biom` have a "biomarker" entry we've covered in our checks.  
+- `r n_unchecked_biom` have a "biomarker" entry we haven't covered yet.
 
-Among those biomarker entries we haven't checked yet, `r sum(pull(dfp_unchecked_bio, n))` are part of a exposure-indication link (`n`) that is currently passing all tests.  Here's the list:
+Among those biomarker entries we haven't checked yet, `r sum(pull(dfp_unchecked_biom, n))` are part of a exposure-indication link (`n`) that is currently passing all tests.  Here's the list:
 
 
 ```{r}
 #| include: true
-dfp_unchecked_bio %>%
+dfp_unchecked_biom %>%
   dt_wrapper(.)
 ```
 
 **Notes:**
 
+- Some that we can't do in GENIE:
+  - "EGFR" - this is from cetuximab and panitumumab, and seems to refer to expression rather than mutations in the case of cetuximab.
+  - Reading the label for panitumumab shows that "KRAS" means *wild type* KRAS and NRAS.  I removed this check for now, wild type is a bit fuzzier than a specific mutation.
 - Items higher on this list will generally give us more ground covered.
-- Specific interests expressed:
-  - EGFR deletions
-  - ROS and RET fusions (fusions are tricky to get a denominator for in GENIE).
+
+
 
 
 

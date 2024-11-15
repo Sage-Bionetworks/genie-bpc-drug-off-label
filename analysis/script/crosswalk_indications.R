@@ -45,6 +45,10 @@ dft_ind %<>%
       # This is lapatinib.  Clearly the letrozole indication, just has a typo
       #   in the study column.
       biomarker %in% "EGF30008" ~ "HR+ and HER2+",
+      # from Nivolumab, assuming it's TPS based on the use in lung:
+      biomarker %in% "PD-L1 at least 1%" ~ "PD-L1 TPS at least 1%",
+      # Same rationale, these are from lung, just coded differently:
+      biomarker %in% "PD-L1 at least 1% AND No EGFR mutations AND No ALK mutations" ~ "PD-L1 TPS at least 1% AND No EGFR mutations AND No ALK mutations",
       T ~ biomarker
     )
   )
@@ -92,7 +96,7 @@ readr::write_rds(
 cohorts_ind <- dft_cw_condition %>% 
   group_by(cohort) %>% slice(1) %>% pull(condition)
 
-dft_pan_cancer_indication <- dft_ind %>%
+dft_pan_cancer_indications <- dft_ind %>%
   filter(condition %in% "Malignant solid neoplasm") %>%
   filter(regulator %in% "FDA") %>%
   # get rid of "dates" like "uncertain date" - can't do nothin with that.

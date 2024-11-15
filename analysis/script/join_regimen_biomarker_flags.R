@@ -154,7 +154,15 @@ dft_skel %<>%
     biom_tnbc = biom_combine_and(!biom_hr, !biom_her2),
     biom_er_or_her2_neg = biom_combine_or(biom_er, !biom_her2),
     biom_EGFR_ex19_or_pL858R = biom_combine_or(biom_EGFR_exon19del,
-                                               biom_EGFR_pL858R)
+                                               biom_EGFR_pL858R),
+    biom_pdl1_1_no_ALK_or_EGFR = biom_combine_and(
+      biom_pdl1_gte_1,
+      biom_no_ALK_or_EGFR
+    ),
+    biom_pdl1_50_no_ALK_or_EGFR = biom_combine_and(
+      biom_pdl1_gte_50,
+      biom_no_ALK_or_EGFR
+    )
   ) %>%
   # preference:  I like the breast cancer markers to be grouped.
   relocate(

@@ -41,12 +41,22 @@ sample_gene_alt <- maf %>%
   )
 # There are some samples missing here - we will fix after merging with custom.
 
+
+
+# Explains the difference between these: 
+# maf %>%
+#   filter(Hugo_Symbol %in% "EGFR") %>%
+#   filter(Variant_Classification %in% "In_Frame_Del") %>%
+#   tabyl(Consequence, Variant_Classification)
+
+
 # In addition to those simple gene features, we will want some specific ones:
 custom_gene_feat <- maf %>%
   mutate(
     EGFR_exon19del = case_when(
       !(Hugo_Symbol %in% "EGFR") ~ F,
-      Exon_Number %in% "19/28" & Consequence %in% "inframe_deletion" ~ T,
+      Exon_Number %in% "19/28" & 
+        Variant_Classification %in% "In_Frame_Del" ~ T,
       T ~ F
     ),
     EGFR_pL858R = case_when(
@@ -73,6 +83,7 @@ custom_gene_feat <- maf %>%
       .fns = \(z) any(z)
     )
   )
+
 
 gene_feat_all <- full_join(
   custom_gene_feat,

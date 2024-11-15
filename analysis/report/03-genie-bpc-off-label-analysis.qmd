@@ -1569,33 +1569,24 @@ dft_biom_her2_fails %>%
 
 **Notes:**
 
-- The results went in the opposite direction from what we would expect after removing people with no tests.  Now every single one is registered as HER2+ even though they had only negative tests before they took this drug.
+- This is mostly people who are negative, now that we're limiting to those who had at least one test before the drug exposure.  That's the direction of shift we would expect.
+
+
 
 ```{r}
 dft_biom_breast_tests <- readr::read_rds(
   here('data', 'cohort', 'biomarker_flags', 'biom_breast_1row_per_test.rds')
 )
 
-dft_biom_breast_tests %>%
-  filter(record_id %in% dft_biom_her2_fails$record_id) %>%
-  filter(str_detect(test, "her2")) %>%
-  group_by(record_id) %>%
-  summarize(any_pos = any(biom_pos, na.rm = T), .groups = 'drop') %>%
-  left_join(., 
-            select(dft_biom_her2_fails, record_id, ca_bca_her_summ),
-            by = c('record_id')
-  ) %>%
-  filter(!any_pos, ca_bca_her_summ %in% "Positive/elevated/amplified")
-  # tabyl(any_pos, ca_bca_her_summ)
-
-vec_olu_biom_her2 <- filter(
-    dft_biom_her2_fails, ca_bca_her_summ %in% "Positive/elevated/amplified"
-  )$record_id
+vec_olu_biom_her2 <- dft_biom_her2_fails$record_id
 
 dft_biom_her2_traj_tests <- dft_biom_breast_tests %>%
   filter(str_detect(test, "her2")) %>%
   filter(record_id %in% vec_olu_biom_her2) %>%
-  select(record_id, event = test, dob_to_event = dob_path_proc_days, contains("biom"))
+  select(record_id, 
+         event = test, 
+         dob_to_event = dob_path_proc_days, 
+         contains("biom"))
 
 dft_biom_her2_traj_drugs <- dft_stepwise_new_olu %>% 
   filter(step %in% "test_biom_her2") %>%
@@ -1631,13 +1622,10 @@ dft_biom_her2_traj %>%
 
 *Notes*
 
-- I don't see anything that looks like an error.
-- Four of these people, who are all HER2+ based on the summary variables, have no path data to back that up at any time.
-- The others seem to have taken trasztuzumab long before any HER2 interpretation pops up in the data.  Seems like missing path reports are a possibility.
-
+- Looking through these, it looks like the code did what we expect.
+- There are quite a few people with a HER2+ result AFTER using trastuzumab.
 
 ```{r}
-
 dft_her2_ngs <- dft_biom_her2_fails %>%
   select(record_id) %>%
   left_join(., select(dft_gen_mark, record_id, any_ERBB2), by = 'record_id') %>%
@@ -1662,9 +1650,69 @@ dft_her2_ngs %>%
 
 **Notes:**
 
-- Lots of ERBB2 mutations/alterations in this group, about half.  Indicates (to me) that people may have been using NGS as evidence for administering trastuzumab.
-- Based on 9/10 of the positive cases having altered ERBB2, we could infer that BPC curators also took this as evidence of people being HER2+ (recall that at least 4 of these people have no path data indicating positivity).
-- GENIE attempts to remove germline data, ERBB2 is often germline mutated, so that's a major caveat here.
+- Lots of ERBB2 mutations/alterations in this group, about a third.  Indicates (to me) that people may have been using NGS as evidence for administering trastuzumab.
+- 4/7 ERBB2 altered people also were marked as positive in the summary variable, so curators may have also taken this as evidence.
+- GENIE attempts to remove germline data, and I think ERBB2 is often germline mutated, so that's a major caveat here.
+
+
+
+
+```{r}
+# Doing the sanity check first this time:
+
+dft_biom_egfr_fails <- dft_stepwise_new_olu %>% 
+  filter(step %in% "test_biom_EGFR_pT790M") %>%
+  pull(new_off_label) %>%
+  `[[`(.,1) %>%
+  filter(agent %in% "Osimertinib")
+
+n_egfr_exposure_fails <- dft_biom_egfr_fails %>% nrow(.)
+
+dft_biom_egfr_fails %<>%
+  select(cohort, record_id, ca_seq) %>%
+  distinct(.)
+
+n_egfr_people_fails <- dft_biom_egfr_fails %>% nrow(.)
+
+dft_ca_ind_nsclc <- dft_all_cases %>% 
+  filter(cohort %in% "NSCLC") %>%
+  pull(ca_ind) %>%
+  `[[`(.,1) %>%
+  fix_cohort_names(.)
+
+dft_biom_egfr_fails %<>%
+  select(cohort, record_id, ca_seq) %>%
+  left_join(
+    .,
+    select(dft_ca_ind_nsclc,
+           cohort, record_id, ca_seq),
+    by = c("cohort", "record_id", "ca_seq")
+  )
+
+
+```
+
+
+#### EGFR, Osimertinib, NSCLC
+
+There are `r n_egfr_exposure_fails` exposures in `r n_egfr_people_fails` people designated off label when the check for EGFR p.T790M was added.  This was the last indication for Osimertinib in NSCLC in these people, the other being the EGFR exon 19 deletion or p.L858R.
+
+This biomarker is based on genomic results, so we can leverage cBioPortal to check a handful of cases (the genomic results are displayed pretty clearly, compared to HER2).  Here are the people:
+
+```{r}
+#| include: true
+set.seed(239084)
+dft_biom_egfr_fails %>%
+  sample_frac(1) %>% # just shuffle cases, get random ones.
+  dt_wrapper(.)
+```
+
+- Some of these people have other EGFR variants that have strong recommendations, up to NCCN recommending Osi, according to the OncoKB annotations.  Examples are GENIE-MSK-P-0019485 having p.G719A and GENIE-MSK-P-0009948 having p.L861Q.
+- Some have things popping up as exon 19 in-frame deletions on cBioPortal (GENIE-DFCI-113584, GENIE-MSK-P-0004739).  **This seems like an error in my ability to detect, will look**.
+- Exon 19 in-frame insertions were present (GENIE-MSK-P-0008602), as were missense alterations on exon 19 (p.L747A on GENIE-DFCI-168454).   These generally have lower "evidence levels" on OncoKB.
+
+
+
 
 
 
@@ -1704,8 +1752,6 @@ dft_drug_index %>%
 
 
 ### Coverage of checks
-
-
 
 ```{r}
 vec_covered_with_simple <- dft_simple_with_tests %>% pull(with_req) %>% unique

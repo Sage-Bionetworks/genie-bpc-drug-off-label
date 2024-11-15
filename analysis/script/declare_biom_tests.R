@@ -28,6 +28,10 @@ simple_biom_tests %<>%
     biom_col = "biom_hr_and_her2_neg"
   ) %>%
   add_row(
+    ind_sheet_bio_req = "HR+ and HER2+",
+    biom_col = "biom_hr_and_her2"
+  ) %>%
+  add_row(
     ind_sheet_bio_req = "ER+|HER2-",
     biom_col = "biom_er_or_her2_neg"
   ) %>%
@@ -40,17 +44,32 @@ simple_biom_tests %<>%
     biom_col = "biom_er"
   ) 
 
-# Genomic
+# Genomic data biomarkers
 simple_biom_tests %<>%
   add_row(
     ind_sheet_bio_req = "No EGFR mutations AND No ALK mutations",
     biom_col = "biom_no_ALK_or_EGFR",
-    test_name = 'test_biom_no_egfr_or_alk'
+    test_name = 'test_biom_no_EGFR_or_ALK'
   ) %>%
   add_row(
     ind_sheet_bio_req = "EGFR exon 19 deletion|EGFR p.L858R",
     biom_col = "biom_EGFR_ex19_or_pL858R"
+  ) %>%
+  add_row(
+    ind_sheet_bio_req = "KRAS",
+    biom_col = "biom_KRAS"
+  ) %>% 
+  add_row(
+    ind_sheet_bio_req = "BRAF p.V600E",
+    biom_col = "biom_BRAF_pV600E"
+  ) %>%  
+  add_row(
+    ind_sheet_bio_req = "EGFR p.T790M",
+    biom_col = "biom_EGFR_pT790M"
   )
+  
+  
+  
 
  
 

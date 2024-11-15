@@ -59,10 +59,9 @@ simple_biom_tests <- readr::read_rds(
   here('data', 'linked_approvals', 'simple_biom_tests.rds')
 )
 
+# Need NULLs here to allow passing to function correctly.
 simple_biom_tests %<>%
   mutate(
-    # with_req = as.list(with_req),
-    # test_name = as.list(test_name),
     test_name = purrr::map(
       .x = test_name,
       .f = \(z) if(is.na(z)) return(NULL) else return(z)
@@ -71,7 +70,7 @@ simple_biom_tests %<>%
 
 # Working tip: add_check_with_simple() has a verbose_results setting to print
 #   some checks.  Turn this on to check typos or off for quieter work. 
-for (k in seq_len(nrow(dft_simple_with_tests))) {
+for (k in seq_len(nrow(simple_biom_tests))) {
   dft_poss_app <- add_check_biomarker_simple(
     dat_poss_app = dft_poss_app,
     ind_sheet_bio_req = pull(simple_biom_tests, ind_sheet_bio_req)[[k]],
@@ -80,75 +79,9 @@ for (k in seq_len(nrow(dft_simple_with_tests))) {
   )
 }
 
-# # Obviously these biomarker tests can be oranized into a dataframe later if needed.
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "HER2+",
-#     biom_col = "biom_her2"
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "HR+",
-#     biom_col = "biom_hr"
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "HR+ and HER2-",
-#     biom_col = "biom_hr_and_her2_neg"
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "ER+|HER2-",
-#     biom_col = "biom_er_or_her2_neg"
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "TNBC",
-#     biom_col = "biom_tnbc"
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "ER+",
-#     biom_col = "biom_er"
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "No EGFR mutations AND No ALK mutations",
-#     biom_col = "biom_no_ALK_or_EGFR",
-#     test_name = 'test_biom_no_egfr_or_alk'
-#   )
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple(
-#     ind_sheet_bio_req = "EGFR exon 19 deletion|EGFR p.L858R",
-#     biom_col = "biom_EGFR_ex19_or_pL858R"
-#   )
-#     
 
 
 
-    
-# dft_poss_app %<>%
-#   add_check_biomarker_simple("HER2+")
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple("HR+")
-# 
-# # We don't have a HER2- flag yet so this does nothing:
-# dft_poss_app %<>%
-#   add_check_biomarker_simple("HR+ and HER2-", c("HR+", "HER2-"))
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple("ER+")
-# 
-# dft_poss_app %<>%
-#   add_check_biomarker_simple("TNBC")
 
 
 dft_simple_with_tests <- readr::read_rds(

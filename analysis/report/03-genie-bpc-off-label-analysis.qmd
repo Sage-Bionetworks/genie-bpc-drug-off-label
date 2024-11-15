@@ -330,13 +330,29 @@ dfp_olu_type_cohort %<>%
   
 ```
 
+
+```{r}
+drug_cohort_sum <- dft_hdrug_det %>%
+  get_cohort_drug_summary %>%
+  limit_drug_sum %>%
+  # trim out some of the salt names and such
+  mutate(agent = drug_name_display_trim(agent)) 
+
+```
+
+
 ### *R3.2 OLU - high level
 
-This table shows the high level results in each cohort, split by three broad categories.  Details on the checks going into each category are given in the next section.
+The high level summary based on "reasons" was removed in Nov 2024 and replaced by a summary based on drugs.  The reason is that the drugs in the exposures are concrete and known to the community, while reason categories we made up are fragile, esoteric and generally hard to compare to other work.
+
+The following table shows the number of total off label uses out of the number of exposures (Total).  The columns to the right of the total are the agents with the highest number of off label exposures in that cohort.  
 
 ```{r}
 #| include: true
-dfp_olu_type_cohort
+drug_cohort_sum %>%
+  drug_cohort_flextable(.) %>%
+  fontsize(size = 8, part = "all") %>%
+  autofit(.) 
 ```
 
 
@@ -410,7 +426,7 @@ Above we presented three <span style="color:#E63746;">broad categories</span> fo
 
 ```{r}
 #| include: true
-#| fig-height: 6
+#| fig-height: 7
 js_olu_cat_explain_tree
 ```
 
@@ -424,7 +440,7 @@ Recall that we categorize participants according to the indication that makes it
 
 ```{r}
 #| include: true
-#| fig-height: 7
+#| fig-height: 9
 gg_step_cohort_n
 ```
 
@@ -445,7 +461,7 @@ The same graph can be shown using proportions too, just for completeness:
 
 ```{r}
 #| include: true
-#| fig-height: 7
+#| fig-height: 9
 gg_step_cohort_prop
 ```
 
@@ -1762,7 +1778,12 @@ vec_covered_bio_complex <- c(
   "HR+",
   "ER+",
   "TNBC",
-  "ER+|HER2-"
+  "ER+|HER2-",
+  "EGFR exon 19 deletion|EGFR p.L858R",
+  "No EGFR mutations AND No ALK mutations",
+  "KRAS",
+  "BRAF p.V600E",
+  "EGFR p.T790M"
 )
 
 vec_covered_bio <- c(vec_covered_bio_simple, vec_covered_bio_complex)
@@ -1787,7 +1808,7 @@ dfp_unchecked_bio <- dft_poss_app %>%
 
 There are `r nrow(dft_poss_app)` linked indications for the drug exposures we're studying.  Among those,
 
-- `r n_checked_bio` have an "biomarker" entry we've covered in our checks.  
+- `r n_checked_bio` have a "biomarker" entry we've covered in our checks.  
 - `r n_unchecked_bio` have a "biomarker" entry we haven't covered yet.
 
 Among those biomarker entries we haven't checked yet, `r sum(pull(dfp_unchecked_bio, n))` are part of a exposure-indication link (`n`) that is currently passing all tests.  Here's the list:

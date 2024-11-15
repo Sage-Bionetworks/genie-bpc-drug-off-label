@@ -42,9 +42,14 @@ dft_ind %<>%
       biomarker %in% "not applicable" ~ NA_character_,
       biomarker %in% "no EGFR or ALK genomic tumor aberrations" ~ 
         "No EGFR mutations AND No ALK mutations",
+      # This is lapatinib.  Clearly the letrozole indication, just has a typo
+      #   in the study column.
+      biomarker %in% "EGF30008" ~ "HR+ and HER2+",
       T ~ biomarker
     )
   )
+  
+  
       
   
 
@@ -76,6 +81,32 @@ dft_cw_condition <- tribble(
 readr::write_rds(
   dft_cw_condition,
   here('data', 'warner_materials', 'cw_condition.rds')
+)
+
+
+
+# Now that we have the cohorts declared, we have to clean up one thing.
+# "Malignant solid neoplasm" means any type of cancer as long as they
+#   meet the biomarker requirements.
+# We will populate one match for each of our cohorts to make this work.
+cohorts_ind <- dft_cw_condition %>% 
+  group_by(cohort) %>% slice(1) %>% pull(condition)
+
+dft_pan_cancer_indication <- dft_ind %>%
+  filter(condition %in% "Malignant solid neoplasm") %>%
+  filter(regulator %in% "FDA") %>%
+  # get rid of "dates" like "uncertain date" - can't do nothin with that.
+  filter(str_detect(date, "^[0-9]{4}-[0-9]{2}")) %>%
+  group_by(component) %>%
+  arrange(date) %>%
+  slice(rep(1, times = length(cohorts_ind))) %>%
+  mutate(condition = cohorts_ind) %>%
+  ungroup(.)
+
+# Add those to the list:
+dft_ind <- rbind(
+  dft_ind,
+  dft_pan_cancer_indications
 )
 
 

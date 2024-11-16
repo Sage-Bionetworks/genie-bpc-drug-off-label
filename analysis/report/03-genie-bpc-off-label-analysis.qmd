@@ -1243,6 +1243,8 @@ gg_vemura_mosaic <- readr::read_rds(here(dir_biomark, 'vemura_gg_mosaic.rds'))
 
 ### *R4.6 Biomarker driven use
 
+**Note:** Tables are currently broken, will get to this.
+
 #### Trastuzumab, EBBB2
 
 We observed several off label uses of trastuzumab, trastuzumab emtansine and trastuzumab deruxtecan (we generalize, just writing "Trastuzumab" below).  Because trastuzumab is indicated for HER2 over-expressing breast cancer, we hypothesized that an ERBB2 alteration may prompt a provider to try trastuzumab in other cancers.
@@ -1708,8 +1710,9 @@ dft_biom_egfr_fails %>%
 ```
 
 - Some of these people have other EGFR variants that have strong recommendations, up to NCCN recommending Osi, according to the OncoKB annotations.  Examples are GENIE-MSK-P-0019485 having p.G719A and GENIE-MSK-P-0009948 having p.L861Q.
-- Some have things popping up as exon 19 in-frame deletions on cBioPortal (GENIE-DFCI-113584, GENIE-MSK-P-0004739).  **This seems like an error in my ability to detect, will look**.
-- Exon 19 in-frame insertions were present (GENIE-MSK-P-0008602), as were missense alterations on exon 19 (p.L747A on GENIE-DFCI-168454).   These generally have lower "evidence levels" on OncoKB.
+- Exon 19 in-frame insertions were present (GENIE-MSK-P-0008602), as were missense alterations on exon 19 (p.L747A on GENIE-DFCI-168454), splice variants, structural variants (GENIE-MSK-P-0025284, but after osi started).  These generally have lower "evidence levels" on OncoKB, down to none at all.
+
+This is a candidate for biomarker-driven use.  Lots of these people have weird EGFR things that someone seemed to think were worth trying.
 
 
 

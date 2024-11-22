@@ -17,6 +17,12 @@ dft_reg_nsclc <- dft_clin_dat_wide %>%
 
 
 
+dft_ca_ind_nsclc <- fread(
+  here('data-raw', 'NSCLC', 
+       'cancer_level_dataset_index.csv')
+)
+
+
 dft_ca_non_ind_nsclc <- fread(
   here('data-raw', 'NSCLC', 
        'cancer_level_dataset_non_index.csv')

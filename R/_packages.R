@@ -34,5 +34,6 @@ library(scales)
 library(cowplot)
 library(collapsibleTree)
 library(ggmosaic)
+library(ggsci)
 
 library(cfmisc)

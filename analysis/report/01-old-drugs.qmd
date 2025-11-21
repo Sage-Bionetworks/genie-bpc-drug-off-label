@@ -123,6 +123,48 @@ Notes:
 - Most of the immunotherapies and biologics our team expressed interest in seem to still be there if we throw out all drugs approved before 1997 - a notable exception is Doxorubicin.
 - Using an FDA approval date cutoff could work too.  For those never approved by the FDA we could just include them in our analysis (it could not be more clear that they're off label if used in the US).
 
+Simple static version for the manuscript, only those which were excluded:
+
+```{r}
+#| include: true
+
+dft_first_approvals %>%
+  filter(first_global_date < '1997-01-01') %>%
+  select(-num_rows_fda) %>%
+  mutate(
+    first_fda_date = case_when(
+      is.infinite(first_fda_date) ~ "(never)",
+      T ~ format(first_fda_date, '%Y-%b-%d')
+    ),
+    first_global_date = format(first_global_date, '%Y-%b-%d')
+  ) %>% 
+  rename(agent = mapped_agent) %>%
+  flextable(., theme_fun = theme_zebra()) %>%
+  flextable::padding(padding.top = 1, padding.bottom = 0) %>%
+  autofit(.)
+```
+
+Simple static version for the manuscript, only those which were included:
+
+```{r}
+#| include: true
+
+dft_first_approvals %>%
+  filter(first_global_date >= '1997-01-01') %>%
+  select(-num_rows_fda) %>%
+  mutate(
+    first_fda_date = case_when(
+      is.infinite(first_fda_date) ~ "(never)",
+      T ~ format(first_fda_date, '%Y-%b-%d')
+    ),
+    first_global_date = format(first_global_date, '%Y-%b-%d')
+  ) %>% 
+  rename(agent = mapped_agent) %>%
+  flextable(., theme_fun = theme_zebra()) %>%
+  flextable::padding(padding.top = 1, padding.bottom = 0) %>%
+  autofit(.)
+
+```
 
 
 ```{r}
@@ -153,7 +195,7 @@ gg_cutoff_drug_uses <- hdrug_all %>%
     breaks = seq(0, 1, by = 0.25),
     labels = paste0(seq(0, 1, by = 0.25) * 100, "%")
   ) +
-  labs(title =  "Proportion of drug uses **excluded**",
+  labs(title =  "Proportion of exposures **excluded**",
        subtitle = "From the raw data, independent of other restrictions") + 
   theme_bw() + 
   scale_color_vibrant() +

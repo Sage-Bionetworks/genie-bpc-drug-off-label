@@ -1,7 +1,9 @@
-# Description: Top level workflow for the project.  
+# Description: Top level workflow for the project.
 # Author: Alex Paynter
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 # Get the raw materials:
@@ -10,11 +12,11 @@ source(here('analysis', 'script', 'create_folders.R'))
 
 # Preprocessing of BPC and indications data:
 source(here('analysis', 'script', 'process_clinical_data.R'))
+source(here('analysis', 'script', 'derive_first_approvals.R'))
 source(here('analysis', 'script', 'remove_old_drugs_save_hdrug.R'))
 source(here('analysis', 'script', 'find_concomitant_drugs.R')) # takes a minute.
 source(here('analysis', 'script', 'process_genomic_data.R'))
 source(here('analysis', 'script', 'crosswalk_indications.R'))
-source(here('analysis', 'script', 'derive_first_approvals.R'))
 
 # Extracting biomarker flags, linking to exposures.
 source(here('analysis', 'script', 'derive_gene_test_flags.R'))
@@ -45,3 +47,5 @@ source(here('analysis', 'script', 'biomarker_driven_use.R'))
 # )
 
 # Render for 02 report, 03 report, etc.
+
+source(here('analysis', 'script', 'manu_fig1.R'))

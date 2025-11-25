@@ -804,13 +804,13 @@ gg_panc_cape <- dft_hdrug_cohort %>%
   ungroup(.) %>%
   plot_drug_use_times(
     .,
-    plot_title = "Pancreatic cohort Capecitabine uses",
-    plot_subtitle = "Blue = First approval"
+    plot_title = "Pancreatic Capecitabine exposures",
+    # plot_subtitle = "Blue = First approval"
   ) +
   # Nobody had this in mind other than me :D 
   # geom_vline(xintercept = ymd("2017-01-01"), color = "#ee3377") +
-  geom_vline(xintercept = ymd("2022-12-14"), color = "#33bbee") +
-  coord_cartesian(xlim = ymd(paste0(c(2006, 2023), "01-01")))
+  geom_vline(xintercept = ymd("2022-12-14"), color = '#177bc2') +
+  coord_cartesian(xlim = ymd(paste0(c(2000, 2023), "01-01")))
 
 
 gg_panc_all_drug <- dft_hdrug_cohort %>%
@@ -819,9 +819,9 @@ gg_panc_all_drug <- dft_hdrug_cohort %>%
   ) %>%
   plot_drug_use_times(
     .,
-    plot_title = "Pancreatic cohort ALL drug uses",
+    plot_title = "Pancreatic exposures (any drug)",
   ) +
-  coord_cartesian(xlim = ymd(paste0(c(2006, 2023), "01-01")))
+  coord_cartesian(xlim = ymd(paste0(c(2000, 2023), "01-01")))
 
 
 
@@ -837,11 +837,13 @@ After seeing the results, we added a lower pane distribution for **all** drug us
 
 ```{r}
 #| include: true
-cowplot::plot_grid(
+gg_panc_cape_and_all <- cowplot::plot_grid(
   gg_panc_cape,
   gg_panc_all_drug,
   ncol = 1
 )
+
+gg_panc_cape_and_all
 ```
 
 **Notes:**
@@ -921,10 +923,11 @@ gg_nsclc_ipili <- dft_hdrug_cohort %>%
   ungroup(.) %>%
   plot_drug_use_times(
     .,
-    plot_title = "NSCLC Ipilimumab uses (first in each patient)",
-    plot_subtitle = "Blue = First FDA approval"
+    plot_title = "NSCLC Ipilimumab uses (first in each patient)"
+    # removing this since it's in another graph.
+    # plot_subtitle = "Blue = First FDA approval"
   ) +
-  geom_vline(xintercept = ymd("2020-05-15"), color = "#33bbee") +
+  # geom_vline(xintercept = ymd("2020-05-15"), color = "#33bbee") +
   coord_cartesian(xlim = ymd(paste0(c(2002, 2022), "01-01")))
 
 gg_nsclc_all_drug <- dft_hdrug_cohort %>%
@@ -1024,6 +1027,11 @@ gg_nccn_panc_cape <- plot_guideline_str(
   y_var = 'char_norm_match',
   plot_title = "String matches from PDF pancreas NCCN guidelines",
 )  +
+  scale_x_date(
+    date_breaks = '2 years',
+    date_labels = '%Y'
+  ) +
+  coord_cartesian(xlim = ymd(paste0(c(2000, 2023), "01-01"))) + 
   geom_vline( 
     xintercept = ymd('2005-01-01'), 
     color = pal_cape_guide[1]
@@ -1077,6 +1085,22 @@ We discussed above the possibility that the NCCN guidelines could precede approv
 #| include: true 
 #| fig.height: 3
 gg_nccn_panc_cape
+```
+
+```{r}
+fig3 <- cowplot::plot_grid(
+  gg_panc_cape,
+  gg_panc_all_drug,
+  gg_nccn_panc_cape,
+  ncol = 1,
+  align = 'v',
+  rel_heights = c(0.3, 0.3, 0.4)
+)
+ggsave(fig3,
+       filename = here('output', 'manu', 'fig3', 'fig3-capecitabine-use-nccn.pdf'),
+       height = 5,
+       width = 7
+)
 ```
 
 

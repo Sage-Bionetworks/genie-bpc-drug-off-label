@@ -1,9 +1,15 @@
+library(purrr)
+library(here)
+library(fs)
+purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
+
+output_dir <- here('output', 'manu', 'fig1')
 
 dft_drug_tracking <- readr::read_rds(
   here('data', 'cohort', 'drug_tracking_02.rds')
 )
 
-dft_drug_tracking %<>% 
+dft_drug_tracking %<>%
   mutate(step = forcats::fct_inorder(step))
 
 drug_sum_help <- function(dat) {
@@ -11,172 +17,152 @@ drug_sum_help <- function(dat) {
     summarize(
       n_uses = n(),
       n_drug = length(unique(agent)),
-      n_pts = length(unique(record_id)),
-      n_cases = length(unique(paste0(record_id, "QZW", ca_seq)))
+      n_pts = length(unique(record_id))
     )
 }
 
-dft_flow_all <- dft_drug_tracking %>%
-  mutate(
-    sum = purrr::map(
-      .x = drug_key,
-      .f = drug_sum_help
-    )
-  ) %>%
-  select(-drug_key) %>%
-  unnest(sum) %>%
-  mutate(prop_lost = (lag(n_uses) - n_uses)/lag(n_uses))
-```
-
-## All cohort numbers
-
-In the table below we start with the raw data, and each row is a processing step which builds on the previous.  The final row is the analysis data which we attempt classify as on or off label.
-
-```{r, include = T}
-dft_flow_all %>%
-  select(step, n_uses, n_drug, n_pts) %>%
-  # mutate(prop_lost = round(prop_lost, 3)) %>%
-  flextable(.) %>%
-  theme_booktabs(.) %>%
-  autofit(.)
-```
-
-**Notes:**
-  
-  - A use is one person using one drug for one period of time.  `n_uses` counts this.  `n_drug` and `n_pts` counts the number of unique drugs and people with at least one observed use.  `prop_lost` is the proportion of the cohort in the previous step filtered out by this one.
-
-## Cohort split numbers
-
-
-
-```{r}
-dft_flow_cohort <- dft_drug_tracking %>%
+dft_flow_by_cohort <- dft_drug_tracking %>%
   mutate(
     sum = purrr::map(
       .x = drug_key,
       .f = \(x) {
-        x %>% group_by(cohort) %>% drug_sum_help
+        x %>%
+          group_by(cohort) %>%
+          drug_sum_help(.)
       }
     )
   ) %>%
   select(-drug_key) %>%
-  unnest(sum) %>%
+  unnest(sum)
+
+dft_flow_by_cohort %<>%
   fix_cohort_names(.) %>%
-  arrange(cohort) 
+  mutate(
+    cohort = cohort_release_order(cohort)
+  )
 
-gg_cohort_drug_prop_loss <- dft_flow_cohort %>%
-  group_by(cohort) %>%
-  mutate(prop_lost = (lag(n_uses) - n_uses)/lag(n_uses)) %>%
-  ungroup(.) %>%
-  filter(!step %in% "Raw data") %>%
-  mutate(cohort_r = fct_rev(fct_inorder(cohort))) %>%
-  ggplot(
-    data = .,
-    aes(x = prop_lost, y = cohort_r, fill = cohort)
-  ) + 
-  geom_col() + 
-  theme_bw() +
-  theme(
-    strip.text = element_text(hjust = 0),
-    legend.position = "none",
-    axis.title.y = element_blank()
-  ) + 
-  scale_x_continuous(
-    expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
-    limits = c(0, 1),
-    breaks = seq(0, 1, by = 0.2),
-    labels = label_percent(),
-    name = "Proportion of drug uses lost in step"
-  ) +
-  scale_fill_vibrant() + 
-  facet_wrap(vars(step), ncol = 1) 
+dft_flow_by_cohort_long <- dft_flow_by_cohort %>%
+  select(step, cohort, n_exposures = n_uses, n_pts, n_drug) %>%
+  pivot_longer(
+    cols = matches("^n_"),
+    names_to = 'metric',
+    values_to = 'value'
+  ) %>%
+  mutate(metric = str_sub(metric, 3, end = -1L))
 
+dft_flow_by_cohort_long %<>%
+  group_by(cohort, metric) %>%
+  arrange(step) %>%
+  mutate(
+    prop_diff = (lag(value) - value) / lag(value),
+    prop_lost = 1 - value / max(value)
+  ) %>%
+  ungroup(.)
 
-dfp_cohort_drug <- dft_flow_cohort %>%
-  select(step, cohort, n_uses) %>%
-  pivot_wider(
-    names_from = 'cohort',
-    values_from = 'n_uses'
+dft_flow_by_cohort_long %<>%
+  mutate(
+    metric = case_when(
+      metric %in% "pts" ~ "Patients",
+      metric %in% 'drug' ~ 'Drugs',
+      T ~ str_to_title(metric)
+    ),
+    metric = factor(metric, levels = c('Exposures', 'Patients', 'Drugs'))
   )
 
 
-```
+attrition_triple_plot <- function(
+  dat,
+  col,
+  universal_scale_max = NULL,
+  rel_widths = c(0.45, 0.25, 0.25),
+  legend_rect_breaks = 9
+) {
+  metric_levs <- dat %>% count(metric) %>% arrange(metric) %>% pull(metric)
 
+  # we want three scales, so we make a helper here:
+  plot_help <- function(
+    dat,
+    met,
+    pal_col,
+    y_labs = F
+  ) {
+    dat %<>%
+      filter(metric %in% met) %>%
+      mutate(step = fct_rev(step))
 
-### Drug overview
+    gg <- ggplot(dat, aes(x = cohort, y = step, fill = .data[[col]])) +
+      geom_tile(color = 'gray20') +
+      ggsci::scale_fill_material(
+        palette = pal_col,
+        labels = scales::label_percent(),
+        name = met,
+        limits = if (!is.null(universal_scale_max)) {
+          c(0, universal_scale_max)
+        } else {
+          NULL
+        }
+      ) +
+      scale_x_discrete(expand = c(0, 0), name = NULL) +
+      scale_y_discrete(expand = c(0, 0), name = NULL) +
+      theme(
+        legend.position = 'bottom',
+      ) +
+      guides(
+        fill = guide_colorbar(
+          nbin = legend_rect_breaks,
+          display = 'rectangles'
+        )
+      )
 
-First we focus on just the proportion of drug uses lost in each step, since that is really our main unit of analysis.
+    if (!y_labs) {
+      gg <- gg +
+        theme(
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.y = element_blank()
+        )
+    }
+    gg
+  }
 
-```{r}
-#| include: true
-#| fig-height: 7
-#| fig-width: 4
-gg_cohort_drug_prop_loss
-```
+  composite <- cowplot::plot_grid(
+    plot_help(dat, met = metric_levs[1], pal_col = 'deep-orange', y_labs = T),
+    plot_help(dat, met = metric_levs[2], pal_col = 'blue'),
+    plot_help(dat, met = metric_levs[3], pal_col = 'green'),
+    nrow = 1,
+    rel_widths = rel_widths
+  )
 
-**Notes:**
-  
-  - The reason for the bladder cancer cohort being so heavily affected leaps out:  Bladder is the most restricted cohort by literally every step.
+  composite
+}
 
+fig1_stepwise_prop_diff <- dft_flow_by_cohort_long %>%
+  filter(!(step %in% 'Raw data')) %>%
+  attrition_triple_plot(
+    dat = .,
+    col = 'prop_diff',
+    universal_scale_max = 1
+  )
 
-```{r}
-gg_use_prop_left <- dft_flow_cohort %>%
-  group_by(cohort) %>%
-  mutate(prop_remaining = n_uses / max(n_uses)) %>%
-  ungroup(.) %>%
-  mutate(step_rev = fct_rev(step)) %>%
-  ggplot(
-    data = .,
-    aes(x = prop_remaining, y = step_rev, group = cohort, color = cohort)
-  ) +
-  geom_path() +
-  theme_bw() +
-  scale_x_continuous(
-    expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
-    limits = c(0, 1),
-    breaks = seq(0, 1, by = 0.25),
-    labels = label_percent(),
-    name = "Proportion of drug uses remaining"
-  ) + 
-  scale_color_vibrant() + 
-  labs(y = NULL)
+fig1_total_lost <- dft_flow_by_cohort_long %>%
+  attrition_triple_plot(
+    dat = .,
+    col = 'prop_lost',
+    universal_scale_max = 1
+  )
 
-gg_drug_left <- dft_flow_cohort %>%
-  mutate(step_rev = fct_rev(step)) %>%
-  ggplot(
-    data = .,
-    aes(x = n_drug, y = step_rev, group = cohort, color = cohort)
-  ) +
-  geom_path() +
-  theme_bw() +
-  scale_x_continuous(
-    expand = expansion(add = c(0, 5), mult = c(0, 0)),
-    limits = c(0, NA),
-    n.breaks = 6,
-    name = "Number of unique drugs remaining"
-  ) + 
-  scale_color_vibrant() + 
-  labs(y = NULL)
-
-gg_comb_left <- cowplot::plot_grid(
-  gg_use_prop_left,
-  gg_drug_left,
-  ncol = 1
+manu_save_helper(
+  plot = fig1_stepwise_prop_diff,
+  dir = output_dir,
+  name = 'manu-fig1-attrition-stepwise',
+  height = 3,
+  width = 14
 )
 
-
-ggsave(
-  gg_comb_left,
-  height = 4, width = 8,
-  filename = here('output', 'img',
-                  '02_filtering_steps_cumulative_line.pdf')
+manu_save_helper(
+  plot = fig1_total_lost,
+  dir = output_dir,
+  name = 'manu-fig1-attrition-cumu',
+  height = 3,
+  width = 14
 )
-```
-
-
-Another way to look at this is the proportion of drugs remaining, as a portion of how many the raw data contain.  The following plot shows this, with the bottom pane showing the absolute number of unique drugs in each cohort.
-
-```{r}
-#| include: true
-gg_comb_left
-```

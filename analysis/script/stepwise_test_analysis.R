@@ -3,7 +3,9 @@
 # This is done by adding one test column at a time and evaluating
 # the data.
 
-library(purrr); library(here); library(fs)
+library(purrr)
+library(here)
+library(fs)
 purrr::walk(.x = fs::dir_ls(here('R')), .f = source)
 
 dir_output <- here('data', 'linked_approvals', 'stepwise')
@@ -55,7 +57,7 @@ dft_step %<>%
 
 dft_step <- dft_step %>%
   select(step, hdrug_det) %>%
-  unnest(hdrug_det) 
+  unnest(hdrug_det)
 
 # for coherence we will add a row representing no tests at all (raw data)
 dft_step_start <- dft_step %>%
@@ -88,15 +90,23 @@ dft_off_label <- dft_step %>%
       }
     ),
     # custom lag with the default being the first row:
-    lag_off_label = off_label[c(1,1:(n()-1))],
+    lag_off_label = off_label[c(1, 1:(n() - 1))],
     new_off_label = purrr::map2(
       .x = off_label,
       .y = lag_off_label,
-      .f = \(x,y) {
+      .f = \(x, y) {
         anti_join(
-          x,y,
-          by = c('cohort', 'record_id', 'ca_seq', 'regimen_number', 
-                 'drug_number', 'agent', 'valid_ind_exists')
+          x,
+          y,
+          by = c(
+            'cohort',
+            'record_id',
+            'ca_seq',
+            'regimen_number',
+            'drug_number',
+            'agent',
+            'valid_ind_exists'
+          )
         )
       }
     )
@@ -116,26 +126,21 @@ readr::write_rds(
   file = here(dir_output, 'stepwise_new_off_label.rds')
 )
 
-  
 
 dft_step_cohort <- dft_step %>%
   group_by(step, cohort) %>%
   summarize(
     n_off_label = sum(!valid_ind_exists),
-    n_on_label = sum(valid_ind_exists), 
+    n_on_label = sum(valid_ind_exists),
     n_total = n(),
     prop_off_label = n_off_label / n_total,
     .groups = "drop"
-  ) 
+  )
 
 readr::write_rds(
   x = dft_step_cohort,
   file = here(dir_output, 'step_sum_cohort.rds')
 )
-
-
-
-
 
 
 dft_rect <- tibble(
@@ -145,14 +150,18 @@ dft_rect <- tibble(
   mutate(x1 = -1, x2 = 1000) # may need to jump this up.
 
 
-
 gg_step_cohort_n <- ggplot(
   data = mutate(dft_step_cohort, step = fct_rev(step)),
   aes(y = step, x = n_off_label, color = cohort, group = cohort)
-) + 
-  geom_rect(inherit.aes = F, data = dft_rect,
-            aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),
-            fill = 'gray90', color = 'gray90', size = 0.01) + 
+) +
+  geom_rect(
+    inherit.aes = F,
+    data = dft_rect,
+    aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),
+    fill = 'gray90',
+    color = 'gray90',
+    size = 0.01
+  ) +
   geom_line() +
   theme_bw() +
   theme(
@@ -161,7 +170,7 @@ gg_step_cohort_n <- ggplot(
     axis.text.y = element_text(hjust = 1),
     panel.grid = element_blank(),
     axis.ticks.y = element_blank()
-  ) + 
+  ) +
   scale_x_continuous(
     expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
     n.breaks = 6,
@@ -171,14 +180,14 @@ gg_step_cohort_n <- ggplot(
   coord_cartesian(
     xlim = c(0, max(dft_step_cohort$n_off_label)),
     ylim = c(1, length(unique(dft_step_cohort$step)))
-  ) + 
+  ) +
   scale_y_discrete(position = "right") +
   scale_color_vibrant() +
   labs(
     y = paste0(
-      "←first", 
-      paste(rep(" ", 10), collapse = ""), 
-      "Step", 
+      "←first",
+      paste(rep(" ", 10), collapse = ""),
+      "Step",
       paste(rep(" ", 10), collapse = ""),
       "last→"
     )
@@ -195,18 +204,21 @@ dft_rect <- tibble(
   y2 = 1.5 + seq(0, 200, by = 2)
 ) %>%
   mutate(x1 = -1, x2 = 1000) # may need to jump this up.
-  
-  
-  
+
 
 gg_step_cohort_prop <- ggplot(
   data = mutate(dft_step_cohort, step = fct_rev(step)),
   aes(y = step, x = prop_off_label, color = cohort, group = cohort)
-) + 
-  geom_blank() + 
-  geom_rect(inherit.aes = F, data = dft_rect,
-            aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),
-            fill = 'gray90', color = 'gray90', size = 0.01) + 
+) +
+  geom_blank() +
+  geom_rect(
+    inherit.aes = F,
+    data = dft_rect,
+    aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),
+    fill = 'gray90',
+    color = 'gray90',
+    size = 0.01
+  ) +
   geom_line() +
   theme_bw() +
   theme(
@@ -215,7 +227,7 @@ gg_step_cohort_prop <- ggplot(
     axis.text.y = element_text(hjust = 1),
     panel.grid = element_blank(),
     axis.ticks.y = element_blank()
-  ) + 
+  ) +
   scale_x_continuous(
     expand = expansion(add = c(0, 0.01), mult = c(0, 0)),
     n.breaks = 6,
@@ -227,12 +239,12 @@ gg_step_cohort_prop <- ggplot(
   coord_cartesian(
     xlim = c(0, max(dft_step_cohort$prop_off_label)),
     ylim = c(1, length(unique(dft_step_cohort$step)))
-  ) + 
+  ) +
   labs(
     y = paste0(
-      "←last", 
-      paste(rep(" ", 10), collapse = ""), 
-      "Step", 
+      "←last",
+      paste(rep(" ", 10), collapse = ""),
+      "Step",
       paste(rep(" ", 10), collapse = ""),
       "first→"
     )
@@ -244,5 +256,3 @@ readr::write_rds(
   gg_step_cohort_prop,
   here(dir_output, 'gg_step_cohort_prop.rds')
 )
-  
-  

@@ -48,4 +48,6 @@ source(here('analysis', 'script', 'biomarker_driven_use.R'))
 
 # Render for 02 report, 03 report, etc.
 
-source(here('analysis', 'script', 'manu_fig1.R'))
+source(here('analysis', 'script', 'manu-fig1-restriction-impact.R'))
+source(here('analysis', 'script', 'manu-fig2-restriction-impact.R'))
+# Figure 3 is still living in the 03 report - needs to be puleld out.
